@@ -20,6 +20,7 @@ export interface GeoMarker {
   /**
    * SiteKick SystemNode id for the detail drawer.
    * Neighborhood / extra AHN campuses map to ahn-hub when no dedicated node exists.
+   * Highmark HQ maps to a payer node (hmk-claims).
    */
   systemId: string;
 }
@@ -30,8 +31,46 @@ export const PA_MAP_ZOOM = 9;
 /** Wider camera when statewide externals (Hershey / York / Reading) are visible */
 export const PA_STATEWIDE_ZOOM = 7;
 
-/** OpenFreeMap dark OSM style — no API key */
-export const OSM_STYLE_URL = 'https://tiles.openfreemap.org/styles/dark';
+/**
+ * Primary basemap: Carto Dark Matter GL (MapLibre style JSON, no API key).
+ * Paints roads/labels reliably in demo rooms.
+ */
+export const OSM_STYLE_URL =
+  'https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json';
+
+/** Compact attribution for UI chrome (tiles carry full OSM/CARTO credit). */
+export const GEO_BASEMAP_ATTRIBUTION = 'Carto Dark Matter · © OSM · © CARTO';
+
+/**
+ * Inline raster fallback when the vector style URL fails to load.
+ * Uses Carto dark raster tiles so the map never stays blank.
+ */
+export const RASTER_OSM_FALLBACK_STYLE = {
+  version: 8 as const,
+  sources: {
+    'carto-dark-raster': {
+      type: 'raster' as const,
+      tiles: [
+        'https://a.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png',
+        'https://b.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png',
+        'https://c.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png',
+      ],
+      tileSize: 256,
+      attribution:
+        '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+      maxzoom: 19,
+    },
+  },
+  layers: [
+    {
+      id: 'carto-dark-raster-layer',
+      type: 'raster' as const,
+      source: 'carto-dark-raster',
+      minzoom: 0,
+      maxzoom: 19,
+    },
+  ],
+};
 
 export const GEO_LAYER_OPTIONS: { id: GeoLayer; label: string }[] = [
   { id: 'ahn-hospitals', label: 'AHN hospitals' },
@@ -49,7 +88,7 @@ export const DEFAULT_GEO_LAYERS: Record<GeoLayer, boolean> = {
 
 /** Scout markers — exact schema (SIM-labeled) */
 export const GEO_MARKERS: GeoMarker[] = [
-  // Highmark HQ
+  // Highmark HQ → payer drawer target
   {
     id: 'highmark-hq',
     lat: 40.4419,
@@ -57,7 +96,7 @@ export const GEO_MARKERS: GeoMarker[] = [
     label: 'Highmark HQ (Fifth Ave Place) (SIM)',
     layer: 'highmark-hq',
     color: 'payer',
-    systemId: 'ahn-hub',
+    systemId: 'hmk-claims',
   },
 
   // AHN hospitals (flagships + regional)

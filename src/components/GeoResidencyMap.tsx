@@ -5,17 +5,20 @@ import {
   NavigationControl,
   LngLatBounds,
   type GeoJSONSource,
+  type StyleSpecification,
 } from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import type { PathNarrative, SystemEdge, SystemNode } from '../data/types';
 import {
   DEFAULT_GEO_LAYERS,
+  GEO_BASEMAP_ATTRIBUTION,
   GEO_LAYER_OPTIONS,
   GEO_MARKERS,
   OSM_STYLE_URL,
   PA_MAP_CENTER,
   PA_MAP_ZOOM,
   PA_STATEWIDE_ZOOM,
+  RASTER_OSM_FALLBACK_STYLE,
   STATEWIDE_EXTERNAL_IDS,
   type GeoEntityColor,
   type GeoLayer,
@@ -51,12 +54,68 @@ function shortLabel(label: string): string {
     .replace('Westfield Memorial', 'Westfield');
 }
 
-function escapeHtml(s: string): string {
-  return s
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;');
+function ensurePathLayers(map: MapLibreMap) {
+  if (map.getSource('sk-path-edges')) return;
+  map.addSource('sk-path-edges', {
+    type: 'geojson',
+    data: { type: 'FeatureCollection', features: [] },
+  });
+  map.addLayer({
+    id: 'sk-path-edges-glow',
+    type: 'line',
+    source: 'sk-path-edges',
+    filter: ['==', ['get', 'onPath'], true],
+    layout: { 'line-cap': 'round', 'line-join': 'round' },
+    paint: {
+      'line-color': '#38bdf8',
+      'line-width': 8,
+      'line-opacity': 0.35,
+      'line-blur': 2,
+    },
+  });
+  map.addLayer({
+    id: 'sk-path-edges-line',
+    type: 'line',
+    source: 'sk-path-edges',
+    layout: { 'line-cap': 'round', 'line-join': 'round' },
+    paint: {
+      'line-color': ['get', 'color'],
+      'line-width': ['get', 'width'],
+      'line-opacity': ['get', 'opacity'],
+    },
+  });
+}
+
+function syncMarkerDom(
+  el: HTMLElement,
+  m: GeoMarker,
+  opts: {
+    color: string;
+    isSelected: boolean;
+    onPath: boolean;
+    onQuery: boolean;
+    dimmed: boolean;
+  },
+) {
+  const { color, isSelected, onPath, onQuery, dimmed } = opts;
+  const nextClass = `sk-geo-marker entity-${m.color}${isSelected ? ' selected' : ''}${onPath || onQuery ? ' on-path' : ''}${dimmed ? ' dimmed' : ''}`;
+  if (el.className !== nextClass) el.className = nextClass;
+  el.style.setProperty('--marker-color', color);
+  el.title = m.label;
+  el.setAttribute('aria-label', m.label);
+
+  let pin = el.querySelector('.sk-geo-marker-pin') as HTMLElement | null;
+  let labelEl = el.querySelector('.sk-geo-marker-label') as HTMLElement | null;
+  if (!pin || !labelEl) {
+    el.replaceChildren();
+    pin = document.createElement('span');
+    pin.className = 'sk-geo-marker-pin';
+    labelEl = document.createElement('span');
+    labelEl.className = 'sk-geo-marker-label';
+    el.append(pin, labelEl);
+  }
+  const text = shortLabel(m.label);
+  if (labelEl.textContent !== text) labelEl.textContent = text;
 }
 
 interface Props {
@@ -91,6 +150,11 @@ export function GeoResidencyMap({
   const markersRef = useRef<Map<string, Marker>>(new Map());
   const onSelectRef = useRef(onSelect);
   onSelectRef.current = onSelect;
+  const lineFeaturesRef = useRef<{
+    type: 'FeatureCollection';
+    features: unknown[];
+  }>({ type: 'FeatureCollection', features: [] });
+  const usedStyleFallbackRef = useRef(false);
 
   const [layersInternal, setLayersInternal] = useState<Record<GeoLayer, boolean>>(() => ({
     ...DEFAULT_GEO_LAYERS,
@@ -165,6 +229,8 @@ export function GeoResidencyMap({
     return { type: 'FeatureCollection' as const, features: feats };
   }, [visibleMarkers, edges, pathEdgeSet]);
 
+  lineFeaturesRef.current = lineFeatures;
+
   // Init map once
   useEffect(() => {
     if (!containerRef.current || mapRef.current) return;
@@ -179,38 +245,62 @@ export function GeoResidencyMap({
     map.addControl(new NavigationControl({ showCompass: false }), 'top-left');
     mapRef.current = map;
 
-    map.on('load', () => {
-      map.addSource('sk-path-edges', {
-        type: 'geojson',
-        data: { type: 'FeatureCollection', features: [] },
-      });
-      map.addLayer({
-        id: 'sk-path-edges-glow',
-        type: 'line',
-        source: 'sk-path-edges',
-        filter: ['==', ['get', 'onPath'], true],
-        layout: { 'line-cap': 'round', 'line-join': 'round' },
-        paint: {
-          'line-color': '#38bdf8',
-          'line-width': 8,
-          'line-opacity': 0.35,
-          'line-blur': 2,
-        },
-      });
-      map.addLayer({
-        id: 'sk-path-edges-line',
-        type: 'line',
-        source: 'sk-path-edges',
-        layout: { 'line-cap': 'round', 'line-join': 'round' },
-        paint: {
-          'line-color': ['get', 'color'],
-          'line-width': ['get', 'width'],
-          'line-opacity': ['get', 'opacity'],
-        },
-      });
+    const applyLineData = () => {
+      const src = map.getSource('sk-path-edges') as GeoJSONSource | undefined;
+      if (src) {
+        src.setData(lineFeaturesRef.current as Parameters<GeoJSONSource['setData']>[0]);
+      }
+    };
+
+    const onStyleReady = () => {
+      ensurePathLayers(map);
+      applyLineData();
+      map.resize();
+    };
+
+    map.on('load', onStyleReady);
+    // setStyle() fires styledata / load again after fallback
+    map.on('style.load', onStyleReady);
+
+    const onMapError = (e: { error?: Error | { message?: string }; status?: number }) => {
+      if (usedStyleFallbackRef.current) return;
+      const msg = (e.error && 'message' in e.error ? e.error.message : '') || '';
+      const status = e.status ?? 0;
+      const looksLikeStyleFailure =
+        status >= 400 ||
+        /style|fetch|network|Failed to fetch|AJAXError|load/i.test(msg) ||
+        !map.isStyleLoaded();
+      if (!looksLikeStyleFailure && map.isStyleLoaded()) return;
+      usedStyleFallbackRef.current = true;
+      map.setStyle(RASTER_OSM_FALLBACK_STYLE as StyleSpecification);
+    };
+    map.on('error', onMapError);
+
+    // If vector style never paints, fall back after a short grace period
+    const fallbackTimer = window.setTimeout(() => {
+      if (usedStyleFallbackRef.current) return;
+      // No basemap layers beyond our path overlays ⇒ style likely blank
+      const layers = map.getStyle()?.layers ?? [];
+      const hasBasemap = layers.some((l) => l.id !== 'sk-path-edges-glow' && l.id !== 'sk-path-edges-line');
+      if (!hasBasemap || !map.isStyleLoaded()) {
+        usedStyleFallbackRef.current = true;
+        map.setStyle(RASTER_OSM_FALLBACK_STYLE as StyleSpecification);
+      }
+    }, 4000);
+
+    const ro = new ResizeObserver(() => {
+      map.resize();
     });
+    ro.observe(containerRef.current);
+    // Tab / layout may assign size after mount
+    requestAnimationFrame(() => map.resize());
 
     return () => {
+      window.clearTimeout(fallbackTimer);
+      ro.disconnect();
+      map.off('error', onMapError);
+      map.off('load', onStyleReady);
+      map.off('style.load', onStyleReady);
       for (const m of markersRef.current.values()) m.remove();
       markersRef.current.clear();
       map.remove();
@@ -223,6 +313,7 @@ export function GeoResidencyMap({
     const map = mapRef.current;
     if (!map) return;
     const apply = () => {
+      ensurePathLayers(map);
       const src = map.getSource('sk-path-edges') as GeoJSONSource | undefined;
       if (src) src.setData(lineFeatures as Parameters<GeoJSONSource['setData']>[0]);
     };
@@ -230,7 +321,7 @@ export function GeoResidencyMap({
     else map.once('load', apply);
   }, [lineFeatures]);
 
-  // Sync markers
+  // Sync markers — update classes/text; do not rewrite innerHTML every pass
   useEffect(() => {
     const map = mapRef.current;
     if (!map) return;
@@ -260,19 +351,15 @@ export function GeoResidencyMap({
           ev.stopPropagation();
           onSelectRef.current(m.systemId);
         });
+        syncMarkerDom(el, m, { color, isSelected, onPath, onQuery, dimmed });
         marker = new Marker({ element: el, anchor: 'bottom' })
           .setLngLat([m.lng, m.lat])
           .addTo(map);
         markersRef.current.set(m.id, marker);
+      } else {
+        syncMarkerDom(marker.getElement(), m, { color, isSelected, onPath, onQuery, dimmed });
+        marker.setLngLat([m.lng, m.lat]);
       }
-
-      const el = marker.getElement();
-      el.className = `sk-geo-marker entity-${m.color}${isSelected ? ' selected' : ''}${onPath || onQuery ? ' on-path' : ''}${dimmed ? ' dimmed' : ''}`;
-      el.style.setProperty('--marker-color', color);
-      el.title = m.label;
-      el.setAttribute('aria-label', m.label);
-      el.innerHTML = `<span class="sk-geo-marker-pin"></span><span class="sk-geo-marker-label">${escapeHtml(shortLabel(m.label))}</span>`;
-      marker.setLngLat([m.lng, m.lat]);
     }
   }, [visibleMarkers, selectedId, pathNodeSet, queryHighlightSet]);
 
@@ -336,7 +423,7 @@ export function GeoResidencyMap({
         Map ≠ eligibility / product-specific network (SIM)
       </div>
       <div className="sk-geo-sim-note" aria-hidden>
-        Scout coords · SIM · OpenFreeMap OSM · no API key
+        Scout coords · SIM · {GEO_BASEMAP_ATTRIBUTION} · no API key
       </div>
     </div>
   );

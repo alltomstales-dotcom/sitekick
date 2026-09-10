@@ -392,6 +392,7 @@
   letter-spacing: 0.02em;
 }
 .sk-geo-marker {
+  /* MapLibre owns transform on this root — never set CSS transform here */
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -399,11 +400,13 @@
   border: 0;
   background: transparent;
   padding: 0;
+  margin: 0;
   cursor: pointer;
   font-family: inherit;
   color: #e2e8f0;
   filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.55));
-  transition: opacity 0.15s ease, transform 0.15s ease;
+  transition: opacity 0.15s ease;
+  will-change: auto;
 }
 .sk-geo-marker.dimmed {
   opacity: 0.22;
@@ -411,7 +414,6 @@
 .sk-geo-marker.on-path {
   opacity: 1;
   z-index: 3;
-  transform: scale(1.06);
 }
 .sk-geo-marker.selected .sk-geo-marker-label {
   box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.65);
@@ -420,14 +422,17 @@
   width: 14px;
   height: 14px;
   border-radius: 50% 50% 50% 0;
+  /* Child-only transform is safe; MapLibre positions the marker root */
   transform: rotate(-45deg);
   background: var(--marker-color, #94a3b8);
   border: 2px solid #0f172a;
   box-sizing: border-box;
+  transition: width 0.15s ease, height 0.15s ease, transform 0.15s ease;
 }
 .sk-geo-marker.on-path .sk-geo-marker-pin {
   width: 16px;
   height: 16px;
+  transform: rotate(-45deg) scale(1.08);
 }
 .sk-geo-marker-label {
   margin-top: 2px;
