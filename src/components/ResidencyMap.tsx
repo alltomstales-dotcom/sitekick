@@ -1,11 +1,13 @@
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   ReactFlow,
+  ReactFlowProvider,
   Background,
   Controls,
   MiniMap,
   Handle,
   Position,
+  useReactFlow,
   type Node,
   type Edge,
   type NodeProps,
@@ -35,10 +37,12 @@ function SystemNodeView({ data }: NodeProps) {
       className={`sk-flow-node entity-${n.legalEntity} ${n.selected ? 'selected' : ''}`}
       style={{ borderColor: ENTITY_COLOR[n.legalEntity] }}
     >
-      <Handle type="target" position={Position.Top} className="sk-handle" />
+      <Handle type="target" position={Position.Left} className="sk-handle" />
       <div className="sk-flow-node-title">{n.shortName}</div>
-      <div className="sk-flow-node-meta">{n.legalEntity} · {n.region}</div>
-      <Handle type="source" position={Position.Bottom} className="sk-handle" />
+      <div className="sk-flow-node-meta">
+        {n.legalEntity} · {n.region}
+      </div>
+      <Handle type="source" position={Position.Right} className="sk-handle" />
     </div>
   );
 }
@@ -46,24 +50,69 @@ function SystemNodeView({ data }: NodeProps) {
 const nodeTypes = { system: SystemNodeView };
 
 const LAYOUT: Record<string, { x: number; y: number }> = {
-  'epic-ehr': { x: 80, y: 40 },
-  scheduling: { x: 80, y: 160 },
-  'lab-core': { x: 80, y: 280 },
-  'pacs-dicom': { x: 80, y: 400 },
-  pharmacy: { x: 80, y: 520 },
-  'ecw-amb': { x: 80, y: 640 },
-  'rev-cycle': { x: 280, y: 100 },
-  rhapsody: { x: 420, y: 320 },
-  mpi: { x: 420, y: 160 },
-  'rhapsody-edge': { x: 620, y: 320 },
-  'edw-rwd': { x: 420, y: 500 },
-  'hie-gw': { x: 620, y: 500 },
-  'hmk-claims': { x: 820, y: 80 },
-  'hmk-elig': { x: 820, y: 200 },
-  'prior-auth': { x: 820, y: 340 },
-  'payer-portal': { x: 1020, y: 140 },
-  'care-mgmt': { x: 820, y: 480 },
+  'epic-ehr': { x: 40, y: 40 },
+  scheduling: { x: 40, y: 160 },
+  'lab-core': { x: 40, y: 280 },
+  'pacs-dicom': { x: 40, y: 400 },
+  pharmacy: { x: 40, y: 520 },
+  'ecw-amb': { x: 40, y: 640 },
+  'rev-cycle': { x: 260, y: 100 },
+  rhapsody: { x: 400, y: 300 },
+  mpi: { x: 400, y: 140 },
+  'rhapsody-edge': { x: 600, y: 300 },
+  'edw-rwd': { x: 400, y: 480 },
+  'hie-gw': { x: 600, y: 480 },
+  'hmk-claims': { x: 800, y: 60 },
+  'hmk-elig': { x: 800, y: 180 },
+  'prior-auth': { x: 800, y: 320 },
+  'payer-portal': { x: 1000, y: 120 },
+  'care-mgmt': { x: 800, y: 460 },
 };
+
+function MapCanvas({
+  nodes,
+  edges,
+  onNodeClick,
+}: {
+  nodes: Node[];
+  edges: Edge[];
+  onNodeClick: (event: React.MouseEvent, node: Node) => void;
+}) {
+  const { fitView } = useReactFlow();
+
+  useEffect(() => {
+    const t = window.setTimeout(() => {
+      fitView({ padding: 0.2, duration: 200 });
+    }, 50);
+    return () => window.clearTimeout(t);
+  }, [nodes, edges, fitView]);
+
+  return (
+    <ReactFlow
+      nodes={nodes}
+      edges={edges}
+      nodeTypes={nodeTypes}
+      onNodeClick={onNodeClick}
+      fitView
+      minZoom={0.25}
+      maxZoom={1.75}
+      proOptions={{ hideAttribution: true }}
+      nodesDraggable={false}
+      nodesConnectable={false}
+      elementsSelectable
+      style={{ width: '100%', height: '100%' }}
+    >
+      <Background color="#1e293b" gap={20} />
+      <Controls showInteractive={false} />
+      <MiniMap
+        nodeColor={(n) =>
+          ENTITY_COLOR[(n.data as unknown as SystemNode).legalEntity] ?? '#64748b'
+        }
+        maskColor="rgba(2,6,23,0.7)"
+      />
+    </ReactFlow>
+  );
+}
 
 export function ResidencyMap() {
   const [dataClass, setDataClass] = useState<DataClass | 'all'>('all');
@@ -80,7 +129,10 @@ export function ResidencyMap() {
     });
   }, [dataClass, entity, region]);
 
-  const filteredIds = useMemo(() => new Set(filteredSystems.map((s) => s.id)), [filteredSystems]);
+  const filteredIds = useMemo(
+    () => new Set(filteredSystems.map((s) => s.id)),
+    [filteredSystems],
+  );
 
   const nodes: Node[] = useMemo(
     () =>
@@ -179,28 +231,10 @@ export function ResidencyMap() {
       </div>
 
       <div className="sk-map-stage">
-        <ReactFlow
-          nodes={nodes}
-          edges={edges}
-          nodeTypes={nodeTypes}
-          onNodeClick={onNodeClick}
-          fitView
-          minZoom={0.4}
-          maxZoom={1.5}
-          proOptions={{ hideAttribution: true }}
-        >
-          <Background color="#1e293b" gap={20} />
-          <Controls />
-          <MiniMap
-            nodeColor={(n) => ENTITY_COLOR[(n.data as unknown as SystemNode).legalEntity] ?? '#64748b'}
-            maskColor="rgba(2,6,23,0.7)"
-          />
-        </ReactFlow>
-        <NodeDetailDrawer
-          node={selected}
-          edges={EDGES}
-          onClose={() => setSelectedId(null)}
-        />
+        <ReactFlowProvider>
+          <MapCanvas nodes={nodes} edges={edges} onNodeClick={onNodeClick} />
+        </ReactFlowProvider>
+        <NodeDetailDrawer node={selected} edges={EDGES} onClose={() => setSelectedId(null)} />
       </div>
     </div>
   );
