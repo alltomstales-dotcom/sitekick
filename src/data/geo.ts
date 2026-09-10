@@ -369,6 +369,44 @@ export const GEO_MARKERS: GeoMarker[] = [
     color: 'shared',
     systemId: 'ext-hub',
   },
+  {
+    id: 'shared-edw-rwd',
+    lat: 40.4445,
+    lng: -79.996,
+    label: 'EDW / Real-World Data (SIM)',
+    layer: 'shared',
+    color: 'shared',
+    systemId: 'edw-rwd',
+  },
+
+  // Highmark payer systems near HQ — offsets so pins don't stack (SIM)
+  {
+    id: 'payer-hmk-elig',
+    lat: 40.4455,
+    lng: -80.0095,
+    label: 'Highmark Eligibility (SIM)',
+    layer: 'highmark-hq',
+    color: 'payer',
+    systemId: 'hmk-elig',
+  },
+  {
+    id: 'payer-prior-auth',
+    lat: 40.438,
+    lng: -79.997,
+    label: 'Prior Auth Platform (SIM)',
+    layer: 'highmark-hq',
+    color: 'payer',
+    systemId: 'prior-auth',
+  },
+  {
+    id: 'payer-portal',
+    lat: 40.4395,
+    lng: -80.0105,
+    label: 'Payer Provider Portal (SIM)',
+    layer: 'highmark-hq',
+    color: 'payer',
+    systemId: 'payer-portal',
+  },
 ];
 
 /** Statewide external marker ids — widen camera when any of these are visible */

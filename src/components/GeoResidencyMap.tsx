@@ -58,7 +58,11 @@ function shortLabel(label: string): string {
     .replace('Rhapsody Axon', 'Rhap Axon')
     .replace('Axon Connect', 'Axon Conn')
     .replace('HIE gateway', 'HIE GW')
-    .replace('External network hub', 'Ext hub');
+    .replace('External network hub', 'Ext hub')
+    .replace('Highmark Eligibility', 'HM Elig')
+    .replace('Prior Auth Platform', 'Prior Auth')
+    .replace('Payer Provider Portal', 'Payer Portal')
+    .replace('EDW / Real-World Data', 'EDW/RWD');
 }
 
 function ensurePathLayers(map: MapLibreMap) {
