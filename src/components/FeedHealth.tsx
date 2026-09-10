@@ -3,21 +3,21 @@ import { SYSTEMS } from '../data/systems';
 import type { FeedMetric } from '../data/types';
 
 const FEED_SYSTEMS = [
-  'epic-ehr',
-  'ecw-amb',
+  'ahn-hub',
+  'ahn-agh',
+  'ext-hub',
+  'upmc',
   'hmk-claims',
   'hmk-elig',
-  'lab-core',
-  'pacs-dicom',
   'rhapsody',
   'rhapsody-edge',
   'mpi',
   'hie-gw',
   'edw-rwd',
-  'scheduling',
-  'pharmacy',
   'prior-auth',
-  'rev-cycle',
+  'penn-state',
+  'wellspan',
+  'tower-health',
 ];
 
 function seedMetrics(): FeedMetric[] {

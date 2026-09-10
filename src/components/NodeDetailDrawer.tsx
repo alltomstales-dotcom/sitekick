@@ -27,7 +27,7 @@ export function NodeDetailDrawer({ node, edges, onClose }: Props) {
       <div className="sk-drawer-body">
         <dl className="sk-dl">
           <div>
-            <dt>Legal entity</dt>
+            <dt>Ownership</dt>
             <dd>
               <span className={`sk-pill entity-${node.legalEntity}`}>{node.legalEntity}</span>
             </dd>
@@ -60,6 +60,17 @@ export function NodeDetailDrawer({ node, edges, onClose }: Props) {
           <h3>Description</h3>
           <p>{node.description}</p>
         </section>
+
+        {node.hospitalList && node.hospitalList.length > 0 && (
+          <section>
+            <h3>Full hospital roster ({node.hospitalList.length})</h3>
+            <ul className="sk-list">
+              {node.hospitalList.map((h) => (
+                <li key={h}>{h}</li>
+              ))}
+            </ul>
+          </section>
+        )}
 
         <section>
           <h3>Data classes</h3>

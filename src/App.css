@@ -139,6 +139,16 @@
   color: #93c5fd;
   border-color: rgba(59, 130, 246, 0.35);
 }
+.entity-family {
+  background: rgba(16, 185, 129, 0.15);
+  color: #6ee7b7;
+  border-color: rgba(16, 185, 129, 0.35);
+}
+.entity-external {
+  background: rgba(245, 158, 11, 0.15);
+  color: #fcd34d;
+  border-color: rgba(245, 158, 11, 0.35);
+}
 .entity-provider {
   background: rgba(16, 185, 129, 0.15);
   color: #6ee7b7;
@@ -315,6 +325,12 @@
 .sk-legend .dot.payer {
   background: var(--payer);
 }
+.sk-legend .dot.family {
+  background: var(--family);
+}
+.sk-legend .dot.external {
+  background: var(--external);
+}
 .sk-legend .dot.provider {
   background: var(--provider);
 }
@@ -325,8 +341,8 @@
 .sk-map-stage {
   position: relative;
   flex: 1;
-  height: 560px;
-  min-height: 560px;
+  height: 640px;
+  min-height: 640px;
   border: 1px solid var(--border);
   border-radius: 12px;
   overflow: hidden;
@@ -343,7 +359,7 @@
 .sk-map-canvas {
   position: relative;
   min-width: 100%;
-  min-height: 560px;
+  min-height: 640px;
   background:
     radial-gradient(circle at 1px 1px, #1e293b 1px, transparent 0) 0 0 / 20px 20px,
     #020617;

@@ -1,4 +1,4 @@
-export type LegalEntity = 'payer' | 'provider' | 'shared';
+export type LegalEntity = 'family' | 'external' | 'payer' | 'shared';
 export type Region = 'east' | 'west' | 'central' | 'cloud';
 export type DataClass =
   | 'clinical'
@@ -21,6 +21,7 @@ export interface SystemNode {
   vendor: string;
   hosting: string;
   residency: string;
+  /** Ownership / network role: Highmark family, external network, payer, or shared infra */
   legalEntity: LegalEntity;
   region: Region;
   dataClasses: DataClass[];
@@ -28,6 +29,8 @@ export interface SystemNode {
   confidence: Confidence;
   description: string;
   accessPaths: string[];
+  /** Optional full org/hospital roster shown in the detail drawer (hubs) */
+  hospitalList?: string[];
 }
 
 export interface SystemEdge {

@@ -10,37 +10,76 @@ import type { DataClass, LegalEntity, Region, SystemEdge, SystemNode } from '../
 import { NodeDetailDrawer } from './NodeDetailDrawer';
 
 const ENTITY_COLOR: Record<LegalEntity, string> = {
+  family: '#10b981',
+  external: '#f59e0b',
   payer: '#3b82f6',
-  provider: '#10b981',
   shared: '#a78bfa',
 };
 
 const NODE_W = 148;
 const NODE_H = 56;
 
-/** Absolute canvas positions for Highmark Hybrid SIM systems */
+/** Absolute canvas positions — two provider lanes + shared + payer */
 const LAYOUT: Record<string, { x: number; y: number }> = {
-  'epic-ehr': { x: 40, y: 40 },
-  scheduling: { x: 40, y: 140 },
-  'lab-core': { x: 40, y: 240 },
-  'pacs-dicom': { x: 40, y: 340 },
-  pharmacy: { x: 40, y: 440 },
-  'ecw-amb': { x: 40, y: 540 },
-  'rev-cycle': { x: 260, y: 100 },
-  mpi: { x: 280, y: 250 },
-  rhapsody: { x: 420, y: 300 },
-  'edw-rwd': { x: 420, y: 480 },
-  'rhapsody-edge': { x: 640, y: 300 },
-  'hie-gw': { x: 640, y: 480 },
-  'hmk-claims': { x: 860, y: 60 },
-  'hmk-elig': { x: 860, y: 180 },
-  'prior-auth': { x: 860, y: 320 },
-  'care-mgmt': { x: 860, y: 460 },
-  'payer-portal': { x: 1080, y: 120 },
+  // Group A — Highmark Family (AHN) lane
+  'ahn-hub': { x: 48, y: 56 },
+  'ahn-agh': { x: 48, y: 140 },
+  'ahn-westpenn': { x: 220, y: 140 },
+  'ahn-forbes': { x: 392, y: 140 },
+  'ahn-jefferson': { x: 48, y: 220 },
+  'ahn-stvincent': { x: 220, y: 220 },
+  'ahn-wexford': { x: 392, y: 220 },
+  'ahn-beaver': { x: 48, y: 300 },
+  'ahn-sewickley': { x: 220, y: 300 },
+
+  // Group B — External Network lane
+  'ext-hub': { x: 48, y: 460 },
+  upmc: { x: 48, y: 544 },
+  'independence-hs': { x: 220, y: 544 },
+  'penn-state': { x: 392, y: 544 },
+  wellspan: { x: 48, y: 624 },
+  'tower-health': { x: 220, y: 624 },
+
+  // Shared spine
+  mpi: { x: 620, y: 160 },
+  rhapsody: { x: 620, y: 280 },
+  'edw-rwd': { x: 620, y: 400 },
+  'rhapsody-edge': { x: 820, y: 280 },
+  'hie-gw': { x: 820, y: 420 },
+
+  // Payer
+  'hmk-claims': { x: 1040, y: 80 },
+  'hmk-elig': { x: 1040, y: 180 },
+  'prior-auth': { x: 1040, y: 300 },
+  'payer-portal': { x: 1040, y: 420 },
 };
 
 const CANVAS_W = 1280;
-const CANVAS_H = 660;
+const CANVAS_H = 760;
+
+/** Lane bands drawn behind nodes */
+const LANES = [
+  {
+    id: 'family',
+    label: 'Highmark Family (AHN)',
+    x: 24,
+    y: 28,
+    w: 540,
+    h: 360,
+    stroke: '#10b981',
+    fill: 'rgba(16, 185, 129, 0.06)',
+  },
+  {
+    id: 'external',
+    label: 'External Network',
+    x: 24,
+    y: 432,
+    w: 540,
+    h: 280,
+    stroke: '#f59e0b',
+    fill: 'rgba(245, 158, 11, 0.06)',
+  },
+] as const;
 
 function edgeStroke(status: SystemEdge['status']): string {
   if (status === 'active') return '#34d399';
@@ -62,7 +101,6 @@ function edgePath(sourceId: string, targetId: string): string {
   const sy = s.y;
   const tx = t.x;
   const ty = t.y;
-  // Cubic bezier with horizontal control handles for readable arcs
   return `M ${sx} ${sy} C ${sx + curve} ${sy}, ${tx - curve} ${ty}, ${tx} ${ty}`;
 }
 
@@ -118,7 +156,7 @@ export function ResidencyMap() {
           </select>
         </label>
         <label>
-          Legal entity
+          Ownership
           <select
             value={entity}
             onChange={(e) => setEntity(e.target.value as LegalEntity | 'all')}
@@ -144,10 +182,13 @@ export function ResidencyMap() {
         </label>
         <div className="sk-legend">
           <span>
-            <i className="dot payer" /> Payer
+            <i className="dot family" /> Family
           </span>
           <span>
-            <i className="dot provider" /> Provider
+            <i className="dot external" /> External
+          </span>
+          <span>
+            <i className="dot payer" /> Payer
           </span>
           <span>
             <i className="dot shared" /> Shared
@@ -212,6 +253,35 @@ export function ResidencyMap() {
                   <path d="M 0 0 L 10 5 L 0 10 z" fill="#f87171" />
                 </marker>
               </defs>
+
+              {LANES.map((lane) => (
+                <g key={lane.id}>
+                  <rect
+                    x={lane.x}
+                    y={lane.y}
+                    width={lane.w}
+                    height={lane.h}
+                    rx={12}
+                    fill={lane.fill}
+                    stroke={lane.stroke}
+                    strokeWidth={1.5}
+                    strokeDasharray="6 4"
+                    opacity={0.95}
+                  />
+                  <text
+                    x={lane.x + 14}
+                    y={lane.y + 20}
+                    fill={lane.stroke}
+                    fontSize={12}
+                    fontWeight={700}
+                    fontFamily="system-ui, sans-serif"
+                    letterSpacing="0.04em"
+                  >
+                    {lane.label}
+                  </text>
+                </g>
+              ))}
+
               {visibleEdges.map((e) => {
                 const stroke = edgeStroke(e.status);
                 const marker =
@@ -276,7 +346,10 @@ export function ResidencyMap() {
                   aria-pressed={isSelected}
                   title={s.label}
                 >
-                  <div className="sk-flow-node-accent" style={{ background: ENTITY_COLOR[s.legalEntity] }} />
+                  <div
+                    className="sk-flow-node-accent"
+                    style={{ background: ENTITY_COLOR[s.legalEntity] }}
+                  />
                   <div className="sk-flow-node-title">{s.shortName}</div>
                   <div className="sk-flow-node-meta">
                     {s.legalEntity} · {s.region}
