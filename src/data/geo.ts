@@ -32,30 +32,11 @@ export const PA_MAP_ZOOM = 9;
 export const PA_STATEWIDE_ZOOM = 7;
 
 /**
- * Primary basemap: Carto Dark Matter GL (MapLibre style JSON, no API key).
- * Paints roads/labels reliably in demo rooms.
+ * Primary basemap: Carto dark_all raster PNG tiles (no API key).
+ * Carto Dark Matter GL vector now watermarks "API KEY REQUIRED" while still
+ * serving ~93 style layers, so vector must not be primary.
  */
-export const OSM_STYLE_URL =
-  'https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json';
-
-/** Compact attribution for UI chrome (tiles carry full OSM/CARTO credit). */
-export const GEO_BASEMAP_ATTRIBUTION = 'Carto Dark Matter · © OSM · © CARTO';
-
-/** Cached PA county SVI choropleth (aggregate public metrics · not PHI). */
-export const PA_SVI_GEOJSON_URL = `${import.meta.env.BASE_URL}geo/pa-counties-svi-2022.json`;
-
-export const GEO_SDOH_ATTRIBUTION = 'CDC/ATSDR SVI 2022 · Census county boundaries';
-
-export type SdohOverlay = 'off' | 'svi';
-
-export const SDOH_DISCLAIMER =
-  'Aggregate public data · ecological fallacy · not eligibility/PHI';
-
-/**
- * Inline raster fallback when the vector style URL fails to load.
- * Uses Carto dark raster tiles so the map never stays blank.
- */
-export const RASTER_OSM_FALLBACK_STYLE = {
+export const DARK_RASTER_STYLE = {
   version: 8 as const,
   sources: {
     'carto-dark-raster': {
@@ -81,6 +62,28 @@ export const RASTER_OSM_FALLBACK_STYLE = {
     },
   ],
 };
+
+/** @deprecated Alias — prefer DARK_RASTER_STYLE */
+export const RASTER_OSM_FALLBACK_STYLE = DARK_RASTER_STYLE;
+
+/**
+ * Optional last-resort vector style if raster primary somehow fails to load.
+ * Non-blocking; do not depend on it (has blanked in some environments).
+ */
+export const OPENFREEMAP_DARK_STYLE_URL = 'https://tiles.openfreemap.org/styles/dark';
+
+/** Compact attribution for UI chrome (tiles carry full OSM/CARTO credit). */
+export const GEO_BASEMAP_ATTRIBUTION = 'Carto dark raster · © OSM · © CARTO';
+
+/** Cached PA county SVI choropleth (aggregate public metrics · not PHI). */
+export const PA_SVI_GEOJSON_URL = `${import.meta.env.BASE_URL}geo/pa-counties-svi-2022.json`;
+
+export const GEO_SDOH_ATTRIBUTION = 'CDC/ATSDR SVI 2022 · Census county boundaries';
+
+export type SdohOverlay = 'off' | 'svi';
+
+export const SDOH_DISCLAIMER =
+  'Aggregate public data · ecological fallacy · not eligibility/PHI';
 
 export const GEO_LAYER_OPTIONS: { id: GeoLayer; label: string }[] = [
   { id: 'ahn-hospitals', label: 'AHN hospitals' },

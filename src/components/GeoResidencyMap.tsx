@@ -14,16 +14,16 @@ import 'maplibre-gl/dist/maplibre-gl.css';
 import type { PathNarrative, SystemEdge, SystemNode } from '../data/types';
 import {
   DEFAULT_GEO_LAYERS,
+  DARK_RASTER_STYLE,
   GEO_BASEMAP_ATTRIBUTION,
   GEO_LAYER_OPTIONS,
   GEO_MARKERS,
   GEO_SDOH_ATTRIBUTION,
-  OSM_STYLE_URL,
+  OPENFREEMAP_DARK_STYLE_URL,
   PA_MAP_CENTER,
   PA_MAP_ZOOM,
   PA_STATEWIDE_ZOOM,
   PA_SVI_GEOJSON_URL,
-  RASTER_OSM_FALLBACK_STYLE,
   SDOH_DISCLAIMER,
   STATEWIDE_EXTERNAL_IDS,
   type GeoEntityColor,
@@ -107,13 +107,6 @@ function ensurePathLayers(map: MapLibreMap) {
 const SDOH_SOURCE = 'sk-sdoh-svi';
 const SDOH_FILL = 'sk-sdoh-svi-fill';
 const SDOH_OUTLINE = 'sk-sdoh-svi-outline';
-const OVERLAY_LAYER_IDS = new Set([
-  'sk-path-edges-glow',
-  'sk-path-edges-line',
-  SDOH_FILL,
-  SDOH_OUTLINE,
-]);
-
 /** Statewide PA camera when SVI choropleth is enabled (once per toggle-on). */
 const PA_SVI_BOUNDS: [[number, number], [number, number]] = [
   [-80.6, 39.65],
@@ -178,7 +171,7 @@ function ensureSdohLayers(map: MapLibreMap, data: Parameters<GeoJSONSource['setD
     map.setPaintProperty(SDOH_OUTLINE, 'line-opacity', 0.9);
   }
 
-  // Keep choropleth above Carto Dark Matter fills/labels; path edges above fills.
+  // Keep choropleth above raster basemap; path edges above fills.
   try {
     map.moveLayer(SDOH_FILL);
     map.moveLayer(SDOH_OUTLINE);
@@ -375,7 +368,8 @@ export function GeoResidencyMap({
 
     const map = new MapLibreMap({
       container: containerRef.current,
-      style: OSM_STYLE_URL,
+      // Keyless Carto dark_all raster — Carto vector GL now watermarks API-key tiles
+      style: DARK_RASTER_STYLE as StyleSpecification,
       center: PA_MAP_CENTER,
       zoom: PA_MAP_ZOOM,
       attributionControl: { compact: true },
@@ -399,9 +393,11 @@ export function GeoResidencyMap({
     };
 
     map.on('load', onStyleReady);
-    // setStyle() fires styledata / load again after fallback
+    // setStyle() fires style.load again after optional last-resort swap
     map.on('style.load', onStyleReady);
 
+    // Last resort only: if raster primary never loads, try OpenFreeMap dark (non-blocking).
+    // Do not detect "blank Carto vector" — that path was broken (watermarked style still has ~93 layers).
     const onMapError = (e: { error?: Error | { message?: string }; status?: number }) => {
       if (usedStyleFallbackRef.current) return;
       const msg = (e.error && 'message' in e.error ? e.error.message : '') || '';
@@ -412,21 +408,17 @@ export function GeoResidencyMap({
         !map.isStyleLoaded();
       if (!looksLikeStyleFailure && map.isStyleLoaded()) return;
       usedStyleFallbackRef.current = true;
-      map.setStyle(RASTER_OSM_FALLBACK_STYLE as StyleSpecification);
+      map.setStyle(OPENFREEMAP_DARK_STYLE_URL);
     };
     map.on('error', onMapError);
 
-    // If vector style never paints, fall back after a short grace period
     const fallbackTimer = window.setTimeout(() => {
       if (usedStyleFallbackRef.current) return;
-      // No basemap layers beyond our path overlays ⇒ style likely blank
-      const layers = map.getStyle()?.layers ?? [];
-      const hasBasemap = layers.some((l) => !OVERLAY_LAYER_IDS.has(l.id));
-      if (!hasBasemap || !map.isStyleLoaded()) {
+      if (!map.isStyleLoaded()) {
         usedStyleFallbackRef.current = true;
-        map.setStyle(RASTER_OSM_FALLBACK_STYLE as StyleSpecification);
+        map.setStyle(OPENFREEMAP_DARK_STYLE_URL);
       }
-    }, 4000);
+    }, 6000);
 
     const ro = new ResizeObserver(() => {
       map.resize();
