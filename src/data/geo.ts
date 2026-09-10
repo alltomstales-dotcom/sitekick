@@ -32,33 +32,32 @@ export const PA_MAP_ZOOM = 9;
 export const PA_STATEWIDE_ZOOM = 7;
 
 /**
- * Primary basemap: inline keyless Carto dark_all raster only (no style URL swap).
- * Never use Carto vector GL (API-key watermark) or OpenFreeMap planet tiles —
- * setStyle() on tile errors wiped SVI GeoJSON layers and left a black void.
+ * Primary basemap: inline keyless Esri World Dark Gray raster (no style URL swap).
+ * Carto dark_all PNG tiles now bake in "API KEY REQUIRED" watermarks; Carto vector GL
+ * is also watermarked. Never setStyle() to OpenFreeMap (dead planet tiles blanked SVI).
  */
 export const DARK_RASTER_STYLE = {
   version: 8 as const,
   sources: {
-    'carto-dark-raster': {
+    'esri-dark-raster': {
       type: 'raster' as const,
       tiles: [
-        'https://a.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png',
-        'https://b.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png',
-        'https://c.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png',
+        'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}',
+        'https://services.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}',
       ],
       tileSize: 256,
       attribution:
-        '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
-      maxzoom: 19,
+        'Tiles &copy; <a href="https://www.esri.com/">Esri</a> &mdash; Esri, HERE, Garmin, FAO, NOAA, USGS',
+      maxzoom: 16,
     },
   },
   layers: [
     {
-      id: 'carto-dark-raster-layer',
+      id: 'esri-dark-raster-layer',
       type: 'raster' as const,
-      source: 'carto-dark-raster',
+      source: 'esri-dark-raster',
       minzoom: 0,
-      maxzoom: 19,
+      maxzoom: 16,
     },
   ],
 };
@@ -66,8 +65,8 @@ export const DARK_RASTER_STYLE = {
 /** @deprecated Alias — prefer DARK_RASTER_STYLE */
 export const RASTER_OSM_FALLBACK_STYLE = DARK_RASTER_STYLE;
 
-/** Compact attribution for UI chrome (tiles carry full OSM/CARTO credit). */
-export const GEO_BASEMAP_ATTRIBUTION = 'Carto dark raster · © OSM · © CARTO';
+/** Compact attribution for UI chrome. */
+export const GEO_BASEMAP_ATTRIBUTION = 'Esri World Dark Gray · © Esri';
 
 /** Public static copy for hosting; app prefers bundled import from src/data. */
 export const PA_SVI_GEOJSON_URL = `${import.meta.env.BASE_URL}geo/pa-counties-svi-2022.json`;

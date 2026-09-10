@@ -373,6 +373,7 @@ export function GeoResidencyMap({
     });
     map.addControl(new NavigationControl({ showCompass: false }), 'top-left');
     mapRef.current = map;
+    (window as unknown as { __SK_MAP__?: MapLibreMap }).__SK_MAP__ = map;
 
     const applyLineData = () => {
       const src = map.getSource('sk-path-edges') as GeoJSONSource | undefined;
@@ -384,7 +385,16 @@ export function GeoResidencyMap({
     const onStyleReady = () => {
       ensurePathLayers(map);
       ensureSdohLayers(map, sviDataRef.current);
-      setSdohVisibility(map, sdohRef.current === 'svi' && sviReadyRef.current);
+      const show = sdohRef.current === 'svi' && sviReadyRef.current;
+      setSdohVisibility(map, show);
+      if (show) {
+        try {
+          if (map.getLayer(SDOH_FILL)) map.moveLayer(SDOH_FILL);
+          if (map.getLayer(SDOH_OUTLINE)) map.moveLayer(SDOH_OUTLINE);
+        } catch {
+          /* ignore */
+        }
+      }
       applyLineData();
       map.resize();
     };
@@ -410,6 +420,7 @@ export function GeoResidencyMap({
       popupRef.current = null;
       map.remove();
       mapRef.current = null;
+      delete (window as unknown as { __SK_MAP__?: MapLibreMap }).__SK_MAP__;
     };
   }, []);
 

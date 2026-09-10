@@ -7,7 +7,7 @@ V0 concept demo: a **Site Survey Index** dashboard for forward-deployed healthca
 
 ## Features
 
-1. **Residency map** — **Logical** (default SVG/HTML canvas) or **Geo** (MapLibre + Carto dark raster basemap, no API keys) toggle. Western/central PA SIM-approx coords for Highmark HQ, AHN flagships, and external hubs; markers colored by family/external/payer. Filters, node detail drawer, and **click-path narratives** (dim non-path, brighten path + geo line highlight; clear with Esc / Clear path).
+1. **Residency map** — **Logical** (default SVG/HTML canvas) or **Geo** (MapLibre + Esri dark raster basemap, no API keys) toggle. Western/central PA SIM-approx coords for Highmark HQ, AHN flagships, and external hubs; markers colored by family/external/payer. Filters, node detail drawer, and **click-path narratives** (dim non-path, brighten path + geo line highlight; clear with Esc / Clear path).
    - **Map Query / Voice** (GEV-inspired) — always-on “Ask the map…” bar + **Voice** mic (browser Web Speech API; no OpenAI key for V0). Client-side intent router maps NL → tools (`highlight_family` / `focus_site` / `show_path` / `filter_layers` / `count_systems` / `what_is` / …). HUD answer chip confirms only succeeded actions. Example chips: “Show AHN family”, “Where is West Penn?”, “Highlight UPMC ADT path”. Swap-in path for a real LLM documented in `src/lib/mapQuery/systemPrompt.ts`.
 2. **Access matrix** — heat map of systems × reachability (`path` / `constrained` / `none` / `unknown`).
 3. **Feed health** — simulated realtime ticks every 2–3s (message rate, lag, last-seen, errors) with a live indicator. Click a feed card to jump to the Residency Map and highlight the related systems + edges (same path UX as gaps).
@@ -19,7 +19,7 @@ V0 concept demo: a **Site Survey Index** dashboard for forward-deployed healthca
 
 - Vite + React 19 + TypeScript
 - lucide-react icons
-- maplibre-gl + Carto dark_all raster basemap (inline style only; no API keys / no OpenFreeMap fallback)
+- maplibre-gl + Esri World Dark Gray raster basemap (inline style only; no API keys / no OpenFreeMap fallback)
 
 ## Run locally
 
