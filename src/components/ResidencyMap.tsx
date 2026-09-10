@@ -1,19 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import {
-  ReactFlow,
-  ReactFlowProvider,
-  Background,
-  Controls,
-  MiniMap,
-  Handle,
-  Position,
-  useReactFlow,
-  type Node,
-  type Edge,
-  type NodeProps,
-  MarkerType,
-} from '@xyflow/react';
-import '@xyflow/react/dist/style.css';
+import { useMemo, useState } from 'react';
 import {
   SYSTEMS,
   EDGES,
@@ -21,7 +6,7 @@ import {
   ENTITY_OPTIONS,
   REGION_OPTIONS,
 } from '../data/systems';
-import type { DataClass, LegalEntity, Region, SystemNode } from '../data/types';
+import type { DataClass, LegalEntity, Region, SystemEdge, SystemNode } from '../data/types';
 import { NodeDetailDrawer } from './NodeDetailDrawer';
 
 const ENTITY_COLOR: Record<LegalEntity, string> = {
@@ -30,88 +15,61 @@ const ENTITY_COLOR: Record<LegalEntity, string> = {
   shared: '#a78bfa',
 };
 
-function SystemNodeView({ data }: NodeProps) {
-  const n = data as unknown as SystemNode & { selected?: boolean };
-  return (
-    <div
-      className={`sk-flow-node entity-${n.legalEntity} ${n.selected ? 'selected' : ''}`}
-      style={{ borderColor: ENTITY_COLOR[n.legalEntity] }}
-    >
-      <Handle type="target" position={Position.Left} className="sk-handle" />
-      <div className="sk-flow-node-title">{n.shortName}</div>
-      <div className="sk-flow-node-meta">
-        {n.legalEntity} · {n.region}
-      </div>
-      <Handle type="source" position={Position.Right} className="sk-handle" />
-    </div>
-  );
-}
+const NODE_W = 148;
+const NODE_H = 56;
 
-const nodeTypes = { system: SystemNodeView };
-
+/** Absolute canvas positions for Highmark Hybrid SIM systems */
 const LAYOUT: Record<string, { x: number; y: number }> = {
   'epic-ehr': { x: 40, y: 40 },
-  scheduling: { x: 40, y: 160 },
-  'lab-core': { x: 40, y: 280 },
-  'pacs-dicom': { x: 40, y: 400 },
-  pharmacy: { x: 40, y: 520 },
-  'ecw-amb': { x: 40, y: 640 },
+  scheduling: { x: 40, y: 140 },
+  'lab-core': { x: 40, y: 240 },
+  'pacs-dicom': { x: 40, y: 340 },
+  pharmacy: { x: 40, y: 440 },
+  'ecw-amb': { x: 40, y: 540 },
   'rev-cycle': { x: 260, y: 100 },
-  rhapsody: { x: 400, y: 300 },
-  mpi: { x: 400, y: 140 },
-  'rhapsody-edge': { x: 600, y: 300 },
-  'edw-rwd': { x: 400, y: 480 },
-  'hie-gw': { x: 600, y: 480 },
-  'hmk-claims': { x: 800, y: 60 },
-  'hmk-elig': { x: 800, y: 180 },
-  'prior-auth': { x: 800, y: 320 },
-  'payer-portal': { x: 1000, y: 120 },
-  'care-mgmt': { x: 800, y: 460 },
+  mpi: { x: 280, y: 250 },
+  rhapsody: { x: 420, y: 300 },
+  'edw-rwd': { x: 420, y: 480 },
+  'rhapsody-edge': { x: 640, y: 300 },
+  'hie-gw': { x: 640, y: 480 },
+  'hmk-claims': { x: 860, y: 60 },
+  'hmk-elig': { x: 860, y: 180 },
+  'prior-auth': { x: 860, y: 320 },
+  'care-mgmt': { x: 860, y: 460 },
+  'payer-portal': { x: 1080, y: 120 },
 };
 
-function MapCanvas({
-  nodes,
-  edges,
-  onNodeClick,
-}: {
-  nodes: Node[];
-  edges: Edge[];
-  onNodeClick: (event: React.MouseEvent, node: Node) => void;
-}) {
-  const { fitView } = useReactFlow();
+const CANVAS_W = 1280;
+const CANVAS_H = 660;
 
-  useEffect(() => {
-    const t = window.setTimeout(() => {
-      fitView({ padding: 0.2, duration: 200 });
-    }, 50);
-    return () => window.clearTimeout(t);
-  }, [nodes, edges, fitView]);
+function edgeStroke(status: SystemEdge['status']): string {
+  if (status === 'active') return '#34d399';
+  if (status === 'degraded' || status === 'constrained') return '#fbbf24';
+  return '#f87171';
+}
 
-  return (
-    <ReactFlow
-      nodes={nodes}
-      edges={edges}
-      nodeTypes={nodeTypes}
-      onNodeClick={onNodeClick}
-      fitView
-      minZoom={0.25}
-      maxZoom={1.75}
-      proOptions={{ hideAttribution: true }}
-      nodesDraggable={false}
-      nodesConnectable={false}
-      elementsSelectable
-      style={{ width: '100%', height: '100%' }}
-    >
-      <Background color="#1e293b" gap={20} />
-      <Controls showInteractive={false} />
-      <MiniMap
-        nodeColor={(n) =>
-          ENTITY_COLOR[(n.data as unknown as SystemNode).legalEntity] ?? '#64748b'
-        }
-        maskColor="rgba(2,6,23,0.7)"
-      />
-    </ReactFlow>
-  );
+function nodeCenter(id: string): { x: number; y: number } {
+  const p = LAYOUT[id] ?? { x: 100, y: 100 };
+  return { x: p.x + NODE_W / 2, y: p.y + NODE_H / 2 };
+}
+
+function edgePath(sourceId: string, targetId: string): string {
+  const s = nodeCenter(sourceId);
+  const t = nodeCenter(targetId);
+  const dx = Math.abs(t.x - s.x);
+  const curve = Math.min(120, Math.max(40, dx * 0.35));
+  const sx = s.x;
+  const sy = s.y;
+  const tx = t.x;
+  const ty = t.y;
+  // Cubic bezier with horizontal control handles for readable arcs
+  return `M ${sx} ${sy} C ${sx + curve} ${sy}, ${tx - curve} ${ty}, ${tx} ${ty}`;
+}
+
+function edgeMidpoint(sourceId: string, targetId: string): { x: number; y: number } {
+  const s = nodeCenter(sourceId);
+  const t = nodeCenter(targetId);
+  return { x: (s.x + t.x) / 2, y: (s.y + t.y) / 2 - 8 };
 }
 
 export function ResidencyMap() {
@@ -134,44 +92,11 @@ export function ResidencyMap() {
     [filteredSystems],
   );
 
-  const nodes: Node[] = useMemo(
-    () =>
-      filteredSystems.map((s) => ({
-        id: s.id,
-        type: 'system',
-        position: LAYOUT[s.id] ?? { x: 100, y: 100 },
-        data: { ...s, selected: selectedId === s.id },
-      })),
-    [filteredSystems, selectedId],
-  );
-
-  const edges: Edge[] = useMemo(() => {
-    return EDGES.filter((e) => filteredIds.has(e.source) && filteredIds.has(e.target))
-      .filter((e) => dataClass === 'all' || e.dataClasses.includes(dataClass))
-      .map((e) => {
-        const stroke =
-          e.status === 'active'
-            ? '#34d399'
-            : e.status === 'degraded' || e.status === 'constrained'
-              ? '#fbbf24'
-              : '#f87171';
-        return {
-          id: e.id,
-          source: e.source,
-          target: e.target,
-          label: e.protocol,
-          animated: e.status === 'active',
-          style: { stroke, strokeWidth: 1.5, opacity: e.status === 'missing' ? 0.4 : 0.85 },
-          labelStyle: { fill: '#94a3b8', fontSize: 9 },
-          labelBgStyle: { fill: '#0f172a', fillOpacity: 0.85 },
-          markerEnd: { type: MarkerType.ArrowClosed, color: stroke, width: 16, height: 16 },
-        };
-      });
+  const visibleEdges = useMemo(() => {
+    return EDGES.filter((e) => filteredIds.has(e.source) && filteredIds.has(e.target)).filter(
+      (e) => dataClass === 'all' || e.dataClasses.includes(dataClass),
+    );
   }, [filteredIds, dataClass]);
-
-  const onNodeClick = useCallback((_: React.MouseEvent, node: Node) => {
-    setSelectedId(node.id);
-  }, []);
 
   const selected = SYSTEMS.find((s) => s.id === selectedId) ?? null;
 
@@ -227,13 +152,140 @@ export function ResidencyMap() {
           <span>
             <i className="dot shared" /> Shared
           </span>
+          <span className="sk-legend-sep" aria-hidden>
+            |
+          </span>
+          <span>
+            <i className="line active" /> Active
+          </span>
+          <span>
+            <i className="line constrained" /> Constrained
+          </span>
+          <span>
+            <i className="line missing" /> Missing
+          </span>
         </div>
       </div>
 
       <div className="sk-map-stage">
-        <ReactFlowProvider>
-          <MapCanvas nodes={nodes} edges={edges} onNodeClick={onNodeClick} />
-        </ReactFlowProvider>
+        <div className="sk-map-scroll">
+          <div className="sk-map-canvas" style={{ width: CANVAS_W, height: CANVAS_H }}>
+            <svg
+              className="sk-map-edges"
+              width={CANVAS_W}
+              height={CANVAS_H}
+              viewBox={`0 0 ${CANVAS_W} ${CANVAS_H}`}
+              aria-hidden
+            >
+              <defs>
+                <marker
+                  id="arrow-active"
+                  viewBox="0 0 10 10"
+                  refX="9"
+                  refY="5"
+                  markerWidth="7"
+                  markerHeight="7"
+                  orient="auto-start-reverse"
+                >
+                  <path d="M 0 0 L 10 5 L 0 10 z" fill="#34d399" />
+                </marker>
+                <marker
+                  id="arrow-warn"
+                  viewBox="0 0 10 10"
+                  refX="9"
+                  refY="5"
+                  markerWidth="7"
+                  markerHeight="7"
+                  orient="auto-start-reverse"
+                >
+                  <path d="M 0 0 L 10 5 L 0 10 z" fill="#fbbf24" />
+                </marker>
+                <marker
+                  id="arrow-bad"
+                  viewBox="0 0 10 10"
+                  refX="9"
+                  refY="5"
+                  markerWidth="7"
+                  markerHeight="7"
+                  orient="auto-start-reverse"
+                >
+                  <path d="M 0 0 L 10 5 L 0 10 z" fill="#f87171" />
+                </marker>
+              </defs>
+              {visibleEdges.map((e) => {
+                const stroke = edgeStroke(e.status);
+                const marker =
+                  e.status === 'active'
+                    ? 'url(#arrow-active)'
+                    : e.status === 'degraded' || e.status === 'constrained'
+                      ? 'url(#arrow-warn)'
+                      : 'url(#arrow-bad)';
+                const mid = edgeMidpoint(e.source, e.target);
+                const opacity = e.status === 'missing' ? 0.45 : 0.9;
+                return (
+                  <g key={e.id} opacity={opacity}>
+                    <path
+                      d={edgePath(e.source, e.target)}
+                      fill="none"
+                      stroke={stroke}
+                      strokeWidth={1.75}
+                      markerEnd={marker}
+                      strokeDasharray={
+                        e.status === 'missing' || e.status === 'broken' ? '5 4' : undefined
+                      }
+                    />
+                    <rect
+                      x={mid.x - Math.min(54, e.protocol.length * 3.2)}
+                      y={mid.y - 9}
+                      width={Math.min(108, e.protocol.length * 6.4 + 10)}
+                      height={16}
+                      rx={3}
+                      fill="#0f172a"
+                      fillOpacity={0.88}
+                    />
+                    <text
+                      x={mid.x}
+                      y={mid.y + 3}
+                      textAnchor="middle"
+                      fill="#94a3b8"
+                      fontSize={9}
+                      fontFamily="system-ui, sans-serif"
+                    >
+                      {e.protocol.length > 22 ? `${e.protocol.slice(0, 20)}…` : e.protocol}
+                    </text>
+                  </g>
+                );
+              })}
+            </svg>
+
+            {filteredSystems.map((s: SystemNode) => {
+              const pos = LAYOUT[s.id] ?? { x: 100, y: 100 };
+              const isSelected = selectedId === s.id;
+              return (
+                <button
+                  key={s.id}
+                  type="button"
+                  className={`sk-flow-node entity-${s.legalEntity}${isSelected ? ' selected' : ''}`}
+                  style={{
+                    left: pos.x,
+                    top: pos.y,
+                    width: NODE_W,
+                    borderColor: ENTITY_COLOR[s.legalEntity],
+                  }}
+                  onClick={() => setSelectedId(s.id)}
+                  aria-pressed={isSelected}
+                  title={s.label}
+                >
+                  <div className="sk-flow-node-accent" style={{ background: ENTITY_COLOR[s.legalEntity] }} />
+                  <div className="sk-flow-node-title">{s.shortName}</div>
+                  <div className="sk-flow-node-meta">
+                    {s.legalEntity} · {s.region}
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        </div>
         <NodeDetailDrawer node={selected} edges={EDGES} onClose={() => setSelectedId(null)} />
       </div>
     </div>

@@ -7,7 +7,7 @@ V0 concept demo: a **Site Survey Index** dashboard for forward-deployed healthca
 
 ## Features
 
-1. **Residency map** — interactive React Flow graph of systems and cross-silo paths, with filters (data class, legal entity, region) and a node detail drawer.
+1. **Residency map** — interactive SVG/HTML canvas of systems and cross-silo paths, with filters (data class, legal entity, region) and a node detail drawer.
 2. **Access matrix** — heat map of systems × reachability (`path` / `constrained` / `none` / `unknown`).
 3. **Feed health** — simulated realtime ticks every 2–3s (message rate, lag, last-seen, errors) with a live indicator.
 4. **Gap / $$ board** — ranked missing/broken paths with estimated dollar-impact hypotheses.
@@ -15,7 +15,6 @@ V0 concept demo: a **Site Survey Index** dashboard for forward-deployed healthca
 ## Stack
 
 - Vite + React 19 + TypeScript
-- [@xyflow/react](https://reactflow.dev/) (React Flow)
 - lucide-react icons
 
 ## Run locally
