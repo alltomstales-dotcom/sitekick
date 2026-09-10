@@ -19,7 +19,7 @@ V0 concept demo: a **Site Survey Index** dashboard for forward-deployed healthca
 
 - Vite + React 19 + TypeScript
 - lucide-react icons
-- maplibre-gl + Carto dark_all raster basemap (OpenFreeMap dark last-resort; no API keys)
+- maplibre-gl + Carto dark_all raster basemap (inline style only; no API keys / no OpenFreeMap fallback)
 
 ## Run locally
 

@@ -19,11 +19,9 @@ import {
   GEO_LAYER_OPTIONS,
   GEO_MARKERS,
   GEO_SDOH_ATTRIBUTION,
-  OPENFREEMAP_DARK_STYLE_URL,
   PA_MAP_CENTER,
   PA_MAP_ZOOM,
   PA_STATEWIDE_ZOOM,
-  PA_SVI_GEOJSON_URL,
   SDOH_DISCLAIMER,
   STATEWIDE_EXTERNAL_IDS,
   type GeoEntityColor,
@@ -31,6 +29,7 @@ import {
   type GeoMarker,
   type SdohOverlay,
 } from '../data/geo';
+import paSviGeojson from '../data/pa-counties-svi-2022.json';
 
 const ENTITY_COLOR: Record<GeoEntityColor, string> = {
   family: '#10b981',
@@ -261,8 +260,6 @@ export function GeoResidencyMap({
     type: 'FeatureCollection';
     features: unknown[];
   }>({ type: 'FeatureCollection', features: [] });
-  const usedStyleFallbackRef = useRef(false);
-
   const [layersInternal, setLayersInternal] = useState<Record<GeoLayer, boolean>>(() => ({
     ...DEFAULT_GEO_LAYERS,
   }));
@@ -393,32 +390,8 @@ export function GeoResidencyMap({
     };
 
     map.on('load', onStyleReady);
-    // setStyle() fires style.load again after optional last-resort swap
+    // Re-attach overlays if style reloads for any reason (never setStyle to OpenFreeMap).
     map.on('style.load', onStyleReady);
-
-    // Last resort only: if raster primary never loads, try OpenFreeMap dark (non-blocking).
-    // Do not detect "blank Carto vector" — that path was broken (watermarked style still has ~93 layers).
-    const onMapError = (e: { error?: Error | { message?: string }; status?: number }) => {
-      if (usedStyleFallbackRef.current) return;
-      const msg = (e.error && 'message' in e.error ? e.error.message : '') || '';
-      const status = e.status ?? 0;
-      const looksLikeStyleFailure =
-        status >= 400 ||
-        /style|fetch|network|Failed to fetch|AJAXError|load/i.test(msg) ||
-        !map.isStyleLoaded();
-      if (!looksLikeStyleFailure && map.isStyleLoaded()) return;
-      usedStyleFallbackRef.current = true;
-      map.setStyle(OPENFREEMAP_DARK_STYLE_URL);
-    };
-    map.on('error', onMapError);
-
-    const fallbackTimer = window.setTimeout(() => {
-      if (usedStyleFallbackRef.current) return;
-      if (!map.isStyleLoaded()) {
-        usedStyleFallbackRef.current = true;
-        map.setStyle(OPENFREEMAP_DARK_STYLE_URL);
-      }
-    }, 6000);
 
     const ro = new ResizeObserver(() => {
       map.resize();
@@ -428,9 +401,7 @@ export function GeoResidencyMap({
     requestAnimationFrame(() => map.resize());
 
     return () => {
-      window.clearTimeout(fallbackTimer);
       ro.disconnect();
-      map.off('error', onMapError);
       map.off('load', onStyleReady);
       map.off('style.load', onStyleReady);
       for (const m of markersRef.current.values()) m.remove();
@@ -442,32 +413,28 @@ export function GeoResidencyMap({
     };
   }, []);
 
-  // Prefetch PA county SVI GeoJSON (cached under public/geo)
+  // Bundle PA county SVI GeoJSON (also kept under public/geo for static hosting)
   useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      try {
-        const res = await fetch(PA_SVI_GEOJSON_URL);
-        if (!res.ok) throw new Error(`SVI fetch ${res.status}`);
-        const json = (await res.json()) as Parameters<GeoJSONSource['setData']>[0];
-        if (cancelled) return;
-        sviDataRef.current = json;
-        setSviReady(true);
-        setSviError(null);
-        const map = mapRef.current;
-        if (map?.isStyleLoaded()) {
-          ensureSdohLayers(map, json);
-          if (sdohRef.current === 'svi') setSdohVisibility(map, true);
+    const json = paSviGeojson as Parameters<GeoJSONSource['setData']>[0];
+    sviDataRef.current = json;
+    setSviReady(true);
+    setSviError(null);
+    const map = mapRef.current;
+    const attach = () => {
+      ensureSdohLayers(map!, json);
+      const show = sdohRef.current === 'svi';
+      setSdohVisibility(map!, show);
+      if (show) {
+        try {
+          if (map!.getLayer(SDOH_FILL)) map!.moveLayer(SDOH_FILL);
+          if (map!.getLayer(SDOH_OUTLINE)) map!.moveLayer(SDOH_OUTLINE);
+        } catch {
+          /* ignore */
         }
-      } catch (err) {
-        if (cancelled) return;
-        setSviError(err instanceof Error ? err.message : 'SVI load failed');
-        setSviReady(false);
       }
-    })();
-    return () => {
-      cancelled = true;
     };
+    if (map?.isStyleLoaded()) attach();
+    else map?.once('load', attach);
   }, []);
 
   // Sync SDOH visibility + click popup
@@ -480,11 +447,21 @@ export function GeoResidencyMap({
       const show = sdoh === 'svi' && sviReady;
       // Force visible whenever overlay is SVI and data is ready (post-ensure / style.load).
       setSdohVisibility(map, show);
-      if (show && !sviFitDoneRef.current) {
-        sviFitDoneRef.current = true;
-        map.fitBounds(PA_SVI_BOUNDS, { padding: 48, duration: 650, maxZoom: 8.5 });
-      }
-      if (!show) {
+      if (show) {
+        try {
+          if (map.getLayer(SDOH_FILL)) map.moveLayer(SDOH_FILL);
+          if (map.getLayer(SDOH_OUTLINE)) map.moveLayer(SDOH_OUTLINE);
+          if (map.getLayer('sk-path-edges-glow')) map.moveLayer('sk-path-edges-glow');
+          if (map.getLayer('sk-path-edges-line')) map.moveLayer('sk-path-edges-line');
+          map.setPaintProperty(SDOH_FILL, 'fill-opacity', 0.72);
+        } catch {
+          /* style mid-load */
+        }
+        if (!sviFitDoneRef.current) {
+          sviFitDoneRef.current = true;
+          map.fitBounds(PA_SVI_BOUNDS, { padding: 48, duration: 650, maxZoom: 8.5 });
+        }
+      } else {
         // Allow another statewide fit next time user turns SVI on.
         sviFitDoneRef.current = false;
       }
