@@ -65,3 +65,22 @@ export interface FeedMetric {
 }
 
 export type ViewId = 'map' | 'matrix' | 'feeds' | 'gaps';
+
+export interface PathNarrative {
+  id: string;
+  /** Optional link to a Gap / $$ Board item */
+  gapId?: string;
+  title: string;
+  /** Short problem statement */
+  problem: string;
+  /** Human labels for systems on the path */
+  systemsTouched: string[];
+  /** Residency / access constraint summary */
+  residencyConstraint: string;
+  /** Dollar lever summary */
+  dollarLever: string;
+  /** Node ids to brighten on the residency map */
+  nodeIds: string[];
+  /** Edge ids to brighten on the residency map */
+  edgeIds: string[];
+}

@@ -7,10 +7,11 @@ V0 concept demo: a **Site Survey Index** dashboard for forward-deployed healthca
 
 ## Features
 
-1. **Residency map** — interactive SVG/HTML canvas of systems and cross-silo paths, with filters (data class, legal entity, region) and a node detail drawer.
+1. **Residency map** — interactive SVG/HTML canvas of systems and cross-silo paths, with filters (data class, legal entity, region) and a node detail drawer. Supports **click-path narratives** (dim non-path nodes, brighten path, narrative strip; clear with Esc / Clear path).
 2. **Access matrix** — heat map of systems × reachability (`path` / `constrained` / `none` / `unknown`).
 3. **Feed health** — simulated realtime ticks every 2–3s (message rate, lag, last-seen, errors) with a live indicator.
-4. **Gap / $$ board** — ranked missing/broken paths with estimated dollar-impact hypotheses.
+4. **Gap / $$ board** — ranked missing/broken paths with estimated dollar-impact hypotheses. Click a curated gap to jump to the map path story.
+5. **Exec brief export** — printable one-pager (`window.print()`) plus `.md` download: Family vs External snapshot, top $$ gaps, week-one spike / SOW line, SIM disclaimer.
 
 ## Stack
 
@@ -34,4 +35,4 @@ npm run preview  # preview the production build
 ## Notes
 
 - Designed for laptop / conference-room demo (dark healthcare-ops aesthetic).
-- Systems cover Epic EHR, ECW ambulatory, Highmark claims/eligibility, lab, PACS, Rhapsody + Edge, MPI, HIE, EDW/RWD, scheduling, pharmacy, prior auth, payer portal, care management, and revenue cycle — all labeled **(SIM)**.
+- Systems cover AHN family hospitals, external network providers (UPMC, Independence, Penn State, WellSpan, Tower), Highmark claims/eligibility, prior auth, Rhapsody + Edge, MPI, HIE, and EDW/RWD — all labeled **(SIM)**.

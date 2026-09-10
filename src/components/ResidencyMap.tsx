@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   SYSTEMS,
   EDGES,
@@ -6,8 +6,9 @@ import {
   ENTITY_OPTIONS,
   REGION_OPTIONS,
 } from '../data/systems';
-import type { DataClass, LegalEntity, Region, SystemEdge, SystemNode } from '../data/types';
+import type { DataClass, LegalEntity, PathNarrative, Region, SystemEdge, SystemNode } from '../data/types';
 import { NodeDetailDrawer } from './NodeDetailDrawer';
+import { X } from 'lucide-react';
 
 const ENTITY_COLOR: Record<LegalEntity, string> = {
   family: '#10b981',
@@ -121,11 +122,34 @@ function edgeMidpoint(sourceId: string, targetId: string): { x: number; y: numbe
   return { x: (s.x + t.x) / 2, y: (s.y + t.y) / 2 - 8 };
 }
 
-export function ResidencyMap() {
+interface Props {
+  activePath: PathNarrative | null;
+  onClearPath: () => void;
+}
+
+export function ResidencyMap({ activePath, onClearPath }: Props) {
   const [dataClass, setDataClass] = useState<DataClass | 'all'>('all');
   const [entity, setEntity] = useState<LegalEntity | 'all'>('all');
   const [region, setRegion] = useState<Region | 'all'>('all');
   const [selectedId, setSelectedId] = useState<string | null>(null);
+
+  const pathNodeSet = useMemo(
+    () => (activePath ? new Set(activePath.nodeIds) : null),
+    [activePath],
+  );
+  const pathEdgeSet = useMemo(
+    () => (activePath ? new Set(activePath.edgeIds) : null),
+    [activePath],
+  );
+
+  useEffect(() => {
+    if (!activePath) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClearPath();
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [activePath, onClearPath]);
 
   const filteredSystems = useMemo(() => {
     return SYSTEMS.filter((s) => {
@@ -150,7 +174,41 @@ export function ResidencyMap() {
   const selected = SYSTEMS.find((s) => s.id === selectedId) ?? null;
 
   return (
-    <div className="sk-map-layout">
+    <div className={`sk-map-layout${activePath ? ' path-mode' : ''}`}>
+      {activePath ? (
+        <div className="sk-path-strip" role="status" aria-live="polite">
+          <div className="sk-path-strip-main">
+            <div className="sk-path-strip-title">
+              <span className="sk-badge">PATH</span>
+              <strong>{activePath.title}</strong>
+            </div>
+            <ol className="sk-path-steps">
+              <li>
+                <span className="step-label">Problem</span>
+                <span className="step-body">{activePath.problem}</span>
+              </li>
+              <li>
+                <span className="step-label">Systems</span>
+                <span className="step-body">{activePath.systemsTouched.join(' → ')}</span>
+              </li>
+              <li>
+                <span className="step-label">Residency / access</span>
+                <span className="step-body">{activePath.residencyConstraint}</span>
+              </li>
+              <li>
+                <span className="step-label">$$ lever</span>
+                <span className="step-body">{activePath.dollarLever}</span>
+              </li>
+            </ol>
+          </div>
+          <button type="button" className="sk-btn sk-btn-ghost sk-clear-path" onClick={onClearPath}>
+            <X size={15} strokeWidth={2} />
+            Clear path
+            <kbd>Esc</kbd>
+          </button>
+        </div>
+      ) : null}
+
       <div className="sk-filters">
         <label>
           Data class
@@ -263,10 +321,28 @@ export function ResidencyMap() {
                 >
                   <path d="M 0 0 L 10 5 L 0 10 z" fill="#f87171" />
                 </marker>
+                <marker
+                  id="arrow-path"
+                  viewBox="0 0 10 10"
+                  refX="9"
+                  refY="5"
+                  markerWidth="8"
+                  markerHeight="8"
+                  orient="auto-start-reverse"
+                >
+                  <path d="M 0 0 L 10 5 L 0 10 z" fill="#38bdf8" />
+                </marker>
+                <filter id="path-glow" x="-40%" y="-40%" width="180%" height="180%">
+                  <feGaussianBlur stdDeviation="2.5" result="coloredBlur" />
+                  <feMerge>
+                    <feMergeNode in="coloredBlur" />
+                    <feMergeNode in="SourceGraphic" />
+                  </feMerge>
+                </filter>
               </defs>
 
               {LANES.map((lane) => (
-                <g key={lane.id}>
+                <g key={lane.id} opacity={pathNodeSet ? 0.35 : 0.95}>
                   <rect
                     x={lane.x}
                     y={lane.y}
@@ -277,7 +353,6 @@ export function ResidencyMap() {
                     stroke={lane.stroke}
                     strokeWidth={1.5}
                     strokeDasharray="6 4"
-                    opacity={0.95}
                   />
                   <text
                     x={lane.x + 14}
@@ -294,22 +369,31 @@ export function ResidencyMap() {
               ))}
 
               {visibleEdges.map((e) => {
-                const stroke = edgeStroke(e.status);
-                const marker =
-                  e.status === 'active'
+                const onPath = pathEdgeSet?.has(e.id) ?? false;
+                const dimmed = pathEdgeSet != null && !onPath;
+                const stroke = onPath ? '#38bdf8' : edgeStroke(e.status);
+                const marker = onPath
+                  ? 'url(#arrow-path)'
+                  : e.status === 'active'
                     ? 'url(#arrow-active)'
                     : e.status === 'degraded' || e.status === 'constrained'
                       ? 'url(#arrow-warn)'
                       : 'url(#arrow-bad)';
                 const mid = edgeMidpoint(e.source, e.target);
-                const opacity = e.status === 'missing' ? 0.45 : 0.9;
+                const baseOpacity = e.status === 'missing' ? 0.45 : 0.9;
+                const opacity = dimmed ? 0.12 : onPath ? 1 : baseOpacity;
                 return (
-                  <g key={e.id} opacity={opacity}>
+                  <g
+                    key={e.id}
+                    opacity={opacity}
+                    filter={onPath ? 'url(#path-glow)' : undefined}
+                    className={onPath ? 'sk-edge-on-path' : undefined}
+                  >
                     <path
                       d={edgePath(e.source, e.target)}
                       fill="none"
                       stroke={stroke}
-                      strokeWidth={1.75}
+                      strokeWidth={onPath ? 3.25 : 1.75}
                       markerEnd={marker}
                       strokeDasharray={
                         e.status === 'missing' || e.status === 'broken' ? '5 4' : undefined
@@ -322,15 +406,16 @@ export function ResidencyMap() {
                       height={16}
                       rx={3}
                       fill="#0f172a"
-                      fillOpacity={0.88}
+                      fillOpacity={dimmed ? 0.4 : 0.88}
                     />
                     <text
                       x={mid.x}
                       y={mid.y + 3}
                       textAnchor="middle"
-                      fill="#94a3b8"
+                      fill={onPath ? '#7dd3fc' : '#94a3b8'}
                       fontSize={9}
                       fontFamily="system-ui, sans-serif"
+                      fontWeight={onPath ? 700 : 400}
                     >
                       {e.protocol.length > 22 ? `${e.protocol.slice(0, 20)}…` : e.protocol}
                     </text>
@@ -342,6 +427,8 @@ export function ResidencyMap() {
             {filteredSystems.map((s: SystemNode) => {
               const pos = LAYOUT[s.id] ?? { x: 100, y: 100 };
               const isSelected = selectedId === s.id;
+              const onPath = pathNodeSet?.has(s.id) ?? false;
+              const dimmed = pathNodeSet != null && !onPath;
               const rosterMore =
                 s.id === 'ahn-hub' && s.hospitalList
                   ? s.hospitalList.length -
@@ -351,12 +438,12 @@ export function ResidencyMap() {
                 <button
                   key={s.id}
                   type="button"
-                  className={`sk-flow-node entity-${s.legalEntity}${isSelected ? ' selected' : ''}`}
+                  className={`sk-flow-node entity-${s.legalEntity}${isSelected ? ' selected' : ''}${onPath ? ' on-path' : ''}${dimmed ? ' dimmed' : ''}`}
                   style={{
                     left: pos.x,
                     top: pos.y,
                     width: NODE_W,
-                    borderColor: ENTITY_COLOR[s.legalEntity],
+                    borderColor: onPath ? '#38bdf8' : ENTITY_COLOR[s.legalEntity],
                   }}
                   onClick={() => setSelectedId(s.id)}
                   aria-pressed={isSelected}
@@ -364,7 +451,7 @@ export function ResidencyMap() {
                 >
                   <div
                     className="sk-flow-node-accent"
-                    style={{ background: ENTITY_COLOR[s.legalEntity] }}
+                    style={{ background: onPath ? '#38bdf8' : ENTITY_COLOR[s.legalEntity] }}
                   />
                   <div className="sk-flow-node-title">{s.shortName}</div>
                   <div className="sk-flow-node-meta">
