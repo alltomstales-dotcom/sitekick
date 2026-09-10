@@ -29,6 +29,7 @@ const ENTITY_COLOR: Record<GeoEntityColor, string> = {
   family: '#10b981',
   external: '#f59e0b',
   payer: '#3b82f6',
+  shared: '#a78bfa',
 };
 
 function edgeStroke(status: SystemEdge['status']): string {
@@ -51,7 +52,13 @@ function shortLabel(label: string): string {
     .replace('Tower Health Reading', 'Tower')
     .replace('Allegheny General', 'AGH')
     .replace('Saint Vincent Erie', 'St Vincent')
-    .replace('Westfield Memorial', 'Westfield');
+    .replace('Westfield Memorial', 'Westfield')
+    .replace('Rhapsody core', 'Rhapsody')
+    .replace('Rhapsody Edge', 'Rhap Edge')
+    .replace('Rhapsody Axon', 'Rhap Axon')
+    .replace('Axon Connect', 'Axon Conn')
+    .replace('HIE gateway', 'HIE GW')
+    .replace('External network hub', 'Ext hub');
 }
 
 function ensurePathLayers(map: MapLibreMap) {
@@ -214,8 +221,15 @@ export function GeoResidencyMap({
           id: e.id,
           onPath,
           color: onPath ? '#38bdf8' : edgeStroke(e.status),
-          width: onPath ? 4 : 2,
-          opacity: dimmed ? 0.1 : onPath ? 1 : pathEdgeSet ? 0.2 : e.status === 'missing' ? 0.35 : 0.55,
+          width: onPath ? 4 : 2.5,
+          // Always-on links when no path; dim non-path when a path is active
+          opacity: dimmed
+            ? 0.12
+            : onPath
+              ? 1
+              : e.status === 'missing'
+                ? 0.45
+                : 0.7,
         },
         geometry: {
           type: 'LineString',

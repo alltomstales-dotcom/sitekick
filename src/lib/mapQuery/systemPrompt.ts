@@ -34,7 +34,7 @@ Available tools:
 3. highlight_payer — brighten Highmark payer systems.
 4. focus_site { query: string } — fuzzy-match a site/system by name or id and select it.
 5. show_path { query: string } — fuzzy-match a path narrative (e.g. UPMC ADT, prior auth) and highlight that path.
-6. filter_layers { layers: string[] } — Geo layers: ahn-hospitals | neighborhood | highmark-hq | external. Values may be labels like "AHN hospitals", "HQ".
+6. filter_layers { layers: string[] } — Geo layers: ahn-hospitals | neighborhood | highmark-hq | external | shared. Values may be labels like "AHN hospitals", "HQ", "Shared / interop", "rhapsody".
 7. count_systems { entity?: "family"|"external"|"payer"|"shared"|"all" } — answer with count + short list.
 8. explain_edge { query: string } — short SIM-safe blurb for an edge (by protocol or "A to B").
 9. what_is { query: string } — short SIM-safe blurb from node data.
@@ -77,7 +77,7 @@ export const TOOL_DEFINITIONS = [
   },
   {
     name: 'filter_layers',
-    description: 'Toggle Geo map layers (AHN hospitals, neighborhood, HQ, external)',
+    description: 'Toggle Geo map layers (AHN hospitals, neighborhood, HQ, external, shared/interop)',
     parameters: {
       type: 'object',
       properties: {

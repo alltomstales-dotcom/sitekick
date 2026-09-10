@@ -3,9 +3,9 @@
  * Coords are approximate demo positions — not survey-grade / not eligibility truth.
  */
 
-export type GeoLayer = 'ahn-hospitals' | 'neighborhood' | 'highmark-hq' | 'external';
+export type GeoLayer = 'ahn-hospitals' | 'neighborhood' | 'highmark-hq' | 'external' | 'shared';
 
-export type GeoEntityColor = 'family' | 'external' | 'payer';
+export type GeoEntityColor = 'family' | 'external' | 'payer' | 'shared';
 
 export interface GeoMarker {
   /** Scout marker id */
@@ -77,6 +77,7 @@ export const GEO_LAYER_OPTIONS: { id: GeoLayer; label: string }[] = [
   { id: 'neighborhood', label: 'Neighborhood' },
   { id: 'highmark-hq', label: 'Highmark HQ' },
   { id: 'external', label: 'External' },
+  { id: 'shared', label: 'Shared / interop' },
 ];
 
 export const DEFAULT_GEO_LAYERS: Record<GeoLayer, boolean> = {
@@ -84,6 +85,7 @@ export const DEFAULT_GEO_LAYERS: Record<GeoLayer, boolean> = {
   neighborhood: true,
   'highmark-hq': true,
   external: true,
+  shared: true,
 };
 
 /** Scout markers — exact schema (SIM-labeled) */
@@ -301,6 +303,71 @@ export const GEO_MARKERS: GeoMarker[] = [
     layer: 'external',
     color: 'external',
     systemId: 'tower-health',
+  },
+
+  // Shared / interop pins near Highmark HQ — slight offsets so connection lines fan out (SIM)
+  {
+    id: 'shared-rhapsody',
+    lat: 40.4485,
+    lng: -79.992,
+    label: 'Rhapsody core (SIM)',
+    layer: 'shared',
+    color: 'shared',
+    systemId: 'rhapsody',
+  },
+  {
+    id: 'shared-rhapsody-edge',
+    lat: 40.4385,
+    lng: -79.9885,
+    label: 'Rhapsody Edge (SIM)',
+    layer: 'shared',
+    color: 'shared',
+    systemId: 'rhapsody-edge',
+  },
+  {
+    id: 'shared-rhapsody-axon',
+    lat: 40.434,
+    lng: -80.012,
+    label: 'Rhapsody Axon (SIM)',
+    layer: 'shared',
+    color: 'shared',
+    systemId: 'rhapsody-axon',
+  },
+  {
+    id: 'shared-axon-connect',
+    lat: 40.4465,
+    lng: -80.0165,
+    label: 'Axon Connect (SIM)',
+    layer: 'shared',
+    color: 'shared',
+    systemId: 'axon-connect',
+  },
+  {
+    id: 'shared-mpi',
+    lat: 40.452,
+    lng: -80.008,
+    label: 'MPI (SIM)',
+    layer: 'shared',
+    color: 'shared',
+    systemId: 'mpi',
+  },
+  {
+    id: 'shared-hie-gw',
+    lat: 40.436,
+    lng: -80.001,
+    label: 'HIE gateway (SIM)',
+    layer: 'shared',
+    color: 'shared',
+    systemId: 'hie-gw',
+  },
+  {
+    id: 'shared-ext-hub',
+    lat: 40.449,
+    lng: -79.9955,
+    label: 'External network hub (SIM)',
+    layer: 'shared',
+    color: 'shared',
+    systemId: 'ext-hub',
   },
 ];
 

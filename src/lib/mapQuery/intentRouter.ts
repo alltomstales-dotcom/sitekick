@@ -76,18 +76,20 @@ export function routeMapQuery(utterance: string): MapQueryPlan {
 
   // filter_layers (Geo)
   if (
-    /\b(filter|show|toggle|hide|only)\b.*\b(layer|layers|hospitals?|neighborhood|hq|external)\b/.test(
+    /\b(filter|show|toggle|hide|only)\b.*\b(layer|layers|hospitals?|neighborhood|hq|external|shared|interop|rhapsody)\b/.test(
       q,
     ) ||
     /\bahn hospitals?\b/.test(q) ||
     /\bneighborhood (hospitals?|layer)?\b/.test(q) ||
-    (/\b(highmark )?hq\b/.test(q) && /\b(show|filter|only|layer)\b/.test(q))
+    (/\b(highmark )?hq\b/.test(q) && /\b(show|filter|only|layer)\b/.test(q)) ||
+    /\b(shared|interop)\b.*\b(layer|layers)?\b/.test(q)
   ) {
     const layers: string[] = [];
     if (/\bahn hospitals?\b|\bfamily hospitals?\b/.test(q)) layers.push('ahn-hospitals');
     if (/\bneighborhood\b/.test(q)) layers.push('neighborhood');
     if (/\b(highmark )?hq\b|\bfifth ave\b/.test(q)) layers.push('highmark-hq');
     if (/\bexternal\b/.test(q) && !/\bexternal systems?\b/.test(q)) layers.push('external');
+    if (/\bshared\b|\binterop\b|\brhapsody\b/.test(q)) layers.push('shared');
     if (layers.length === 0 && /\bahn hospitals?\b/.test(q)) layers.push('ahn-hospitals');
     if (layers.length > 0) {
       const exclusive = /\bonly\b|\bjust\b/.test(q);

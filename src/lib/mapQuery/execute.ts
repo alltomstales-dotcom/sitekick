@@ -114,6 +114,13 @@ function parseLayers(raw: unknown): GeoLayer[] {
       out.push('highmark-hq');
     } else if (s === 'external' || s.includes('external')) {
       out.push('external');
+    } else if (
+      s === 'shared' ||
+      s.includes('interop') ||
+      s.includes('rhapsody') ||
+      s.includes('shared')
+    ) {
+      out.push('shared');
     }
   }
   return [...new Set(out)];
