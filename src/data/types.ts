@@ -46,14 +46,17 @@ export interface SystemEdge {
 
 export interface GapItem {
   id: string;
-  rank: number;
   title: string;
   systems: [string, string];
-  impactUsd: number;
+  /** Midpoint $/yr impact estimate — display rank is derived by sorting on this */
+  impactMid: number;
   hypothesis: string;
   blockers: string[];
   severity: 'critical' | 'high' | 'medium' | 'low';
 }
+
+/** Gap with display rank computed from impactMid (high → low). */
+export type RankedGap = GapItem & { rank: number };
 
 export interface FeedMetric {
   systemId: string;

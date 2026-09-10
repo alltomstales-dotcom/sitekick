@@ -1,4 +1,4 @@
-import { GAPS, SYSTEMS } from '../data/systems';
+import { rankedGaps, SYSTEMS } from '../data/systems';
 
 function fmtUsd(n: number): string {
   if (n >= 1_000_000) return `$${(n / 1_000_000).toFixed(1)}M`;
@@ -11,8 +11,8 @@ export function getExecSnapshot() {
   const external = SYSTEMS.filter((s) => s.legalEntity === 'external').length;
   const payer = SYSTEMS.filter((s) => s.legalEntity === 'payer').length;
   const shared = SYSTEMS.filter((s) => s.legalEntity === 'shared').length;
-  const topGaps = [...GAPS].sort((a, b) => a.rank - b.rank).slice(0, 5);
-  const totalImpact = topGaps.reduce((s, g) => s + g.impactUsd, 0);
+  const topGaps = rankedGaps().slice(0, 5);
+  const totalImpact = topGaps.reduce((s, g) => s + g.impactMid, 0);
   return { family, external, payer, shared, topGaps, totalImpact };
 }
 
@@ -23,7 +23,7 @@ export function buildExecBriefMarkdown(): string {
       const [a, b] = g.systems;
       const sa = SYSTEMS.find((s) => s.id === a)?.shortName ?? a;
       const sb = SYSTEMS.find((s) => s.id === b)?.shortName ?? b;
-      return `### ${g.rank}. ${g.title}\n- Path: ${sa} → ${sb}\n- Est. impact: **${fmtUsd(g.impactUsd)}/yr** (${g.severity})\n- Hypothesis: ${g.hypothesis}\n- Blockers: ${g.blockers.join('; ')}`;
+      return `### ${g.rank}. ${g.title}\n- Path: ${sa} → ${sb}\n- Est. impact: **${fmtUsd(g.impactMid)}/yr** (${g.severity})\n- Hypothesis: ${g.hypothesis}\n- Blockers: ${g.blockers.join('; ')}`;
     })
     .join('\n\n');
 
@@ -80,7 +80,7 @@ export function buildExecBriefHtml(): string {
           <div class="gap-path">${escapeHtml(sa)} → ${escapeHtml(sb)}</div>
           <div class="gap-hyp">${escapeHtml(g.hypothesis)}</div>
         </td>
-        <td class="usd">${fmtUsd(g.impactUsd)}</td>
+        <td class="usd">${fmtUsd(g.impactMid)}</td>
         <td><span class="sev sev-${g.severity}">${g.severity}</span></td>
       </tr>`;
     })

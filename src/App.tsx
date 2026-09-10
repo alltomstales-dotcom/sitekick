@@ -48,6 +48,7 @@ export default function App() {
 
   const resetInterview = useCallback(() => {
     setInterviewAnswers(emptyInterviewAnswers());
+    setActivePathId(null);
   }, []);
 
   return (
@@ -59,6 +60,7 @@ export default function App() {
           <ResidencyMap
             activePath={activePath}
             onClearPath={clearPath}
+            onActivatePath={activatePath}
             interviewedNodes={interviewedNodes}
             interviewedEdges={interviewedEdges}
           />

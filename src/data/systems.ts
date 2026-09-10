@@ -1,4 +1,4 @@
-import type { SystemNode, SystemEdge, GapItem, Reachability } from './types';
+import type { SystemNode, SystemEdge, GapItem, RankedGap, Reachability } from './types';
 
 const AHN_FULL_HOSPITALS = [
   'AHN Allegheny General',
@@ -915,105 +915,103 @@ export const EDGES: SystemEdge[] = [
 export const GAPS: GapItem[] = [
   {
     id: 'g1',
-    rank: 1,
     title: 'AHN family → Prior Auth CRD not in production',
     systems: ['ahn-hub', 'prior-auth'],
-    impactUsd: 4200000,
+    impactMid: 4200000,
     hypothesis: 'Manual fax/portal auth adds 3–5 days TAT across AHN campuses; OR & specialty leakage estimated $4.2M/yr.',
     blockers: ['CRD pilot only', 'Fax fallback', 'No DTR questionnaires live'],
     severity: 'critical',
   },
   {
     id: 'g2',
-    rank: 2,
     title: 'External network → Prior Auth path missing',
     systems: ['ext-hub', 'prior-auth'],
-    impactUsd: 2800000,
+    impactMid: 2800000,
     hypothesis: 'External orgs rely on staff portals; auth denials & abandoned referrals ~$2.8M. Varies by Highmark product.',
     blockers: ['No automated CRD', 'Narrow-network exceptions', 'Staffing bottleneck'],
     severity: 'critical',
   },
   {
     id: 'g9',
-    rank: 3,
     title: 'AHN→Rhapsody mapping without Axon assist',
     systems: ['ahn-hub', 'rhapsody-axon'],
-    impactUsd: 2100000,
+    impactMid: 2100000,
     hypothesis: 'Manual HL7v2/FHIR mapping and transform rework on AHN family routes burns week-one; Axon-in-engine assist (propose mappings, transform logic) cuts cycle time — est. $2.1M/yr opportunity cost (SIM).',
     blockers: ['Axon Day-1 spike not scheduled', 'Spec ambiguity in CRD/HL7 routes', 'Tribal knowledge in interface team'],
     severity: 'critical',
   },
   {
-    id: 'g10',
-    rank: 4,
-    title: 'External partner onboarding without Axon Connect playbooks',
-    systems: ['axon-connect', 'upmc'],
-    impactUsd: 1750000,
-    hypothesis: 'UPMC/Independence/vendor onboarding stalls on clarification cycles; Axon Connect playbooks from uploaded specs/security reqs accelerate go-live — est. $1.75M/yr (SIM).',
-    blockers: ['No Axon Connect playbooks authored', 'Specs/security packets incomplete', 'Together Blue / product variance'],
-    severity: 'high',
-  },
-  {
     id: 'g3',
-    rank: 5,
     title: 'UPMC clinical → Highmark constrained',
     systems: ['upmc', 'hie-gw'],
-    impactUsd: 1900000,
+    impactMid: 1900000,
     hypothesis: 'Competitive + product (Together Blue) limits block timely CCD; out-of-network and continuity risk ~$1.9M.',
     blockers: ['Together Blue exceptions', 'Competitive data sharing', 'Consent gaps'],
     severity: 'high',
   },
   {
+    id: 'g10',
+    title: 'External partner onboarding without Axon Connect playbooks',
+    systems: ['axon-connect', 'upmc'],
+    // Mid of ~$1.75–1.8M range so inserts stay ordered by numeric impact
+    impactMid: 1775000,
+    hypothesis: 'UPMC/Independence/vendor onboarding stalls on clarification cycles; Axon Connect playbooks from uploaded specs/security reqs accelerate go-live — est. $1.75–1.8M/yr (SIM).',
+    blockers: ['No Axon Connect playbooks authored', 'Specs/security packets incomplete', 'Together Blue / product variance'],
+    severity: 'high',
+  },
+  {
     id: 'g4',
-    rank: 6,
     title: 'HIE clinical → payer use constrained',
     systems: ['hie-gw', 'edw-rwd'],
-    impactUsd: 1500000,
+    impactMid: 1500000,
     hypothesis: 'Consent & purpose-of-use limits block HIE→EDW for care mgmt RWD; opportunity ~$1.5M.',
     blockers: ['Consent gaps', 'Purpose-of-use policy', 'Tokenization lag'],
     severity: 'high',
   },
   {
     id: 'g5',
-    rank: 7,
     title: 'Tower / WellSpan Edge mediation incomplete',
     systems: ['tower-health', 'rhapsody-edge'],
-    impactUsd: 1100000,
+    impactMid: 1100000,
     hypothesis: 'Fax fallback and product variance for south-central PA externals ~$1.1M leakage.',
     blockers: ['Fax fallback', 'Product participation variance'],
     severity: 'high',
   },
   {
     id: 'g6',
-    rank: 8,
     title: 'External MPI coverage incomplete',
     systems: ['ext-hub', 'mpi'],
-    impactUsd: 640000,
+    impactMid: 640000,
     hypothesis: 'External MRNs rarely enroll in enterprise MPI; duplicate testing & claim rejects ~$640K.',
     blockers: ['No deep MPI enroll', 'Demographic quality'],
     severity: 'medium',
   },
   {
     id: 'g7',
-    rank: 9,
     title: 'Penn State referral continuity gaps',
     systems: ['penn-state', 'ahn-hub'],
-    impactUsd: 520000,
+    impactMid: 520000,
     hypothesis: 'Academic referrals lose context across product networks; readmit / rework ~$520K.',
     blockers: ['Referral-only pathways', 'No shared care plan feed'],
     severity: 'medium',
   },
   {
     id: 'g8',
-    rank: 10,
     title: 'Independence HS narrow-network tiering',
     systems: ['independence-hs', 'hmk-elig'],
-    impactUsd: 480000,
+    impactMid: 480000,
     hypothesis: 'Eligibility at registration misses product tier rules for Independence sites ~$480K bad debt / leakage.',
     blockers: ['Narrow-network tiering', 'Portal-only workarounds'],
     severity: 'medium',
   },
 ];
+
+/** Rank gaps by impactMid (high → low). Display # is always derived — never hand-maintained. */
+export function rankedGaps(): RankedGap[] {
+  return [...GAPS]
+    .sort((a, b) => b.impactMid - a.impactMid)
+    .map((g, i) => ({ ...g, rank: i + 1 }));
+}
 
 /** Reachability matrix: from row system to column system */
 export function getReachability(fromId: string, toId: string): Reachability {

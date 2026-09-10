@@ -1,4 +1,4 @@
-import { GAPS, SYSTEMS } from '../data/systems';
+import { rankedGaps, SYSTEMS } from '../data/systems';
 import { getNarrativeForGap, PATH_NARRATIVES } from '../data/narratives';
 import { downloadExecBriefMarkdown, openExecBriefPrint } from '../lib/execBrief';
 import { FileDown, Printer, Route } from 'lucide-react';
@@ -15,7 +15,8 @@ interface Props {
 }
 
 export function GapBoard({ onActivatePath, activePathId }: Props) {
-  const total = GAPS.reduce((s, g) => s + g.impactUsd, 0);
+  const gaps = rankedGaps();
+  const total = gaps.reduce((s, g) => s + g.impactMid, 0);
 
   return (
     <div className="sk-gaps">
@@ -54,7 +55,7 @@ export function GapBoard({ onActivatePath, activePathId }: Props) {
       </div>
 
       <ol className="sk-gap-list">
-        {GAPS.map((g) => {
+        {gaps.map((g) => {
           const [a, b] = g.systems;
           const sa = SYSTEMS.find((s) => s.id === a);
           const sb = SYSTEMS.find((s) => s.id === b);
@@ -100,7 +101,7 @@ export function GapBoard({ onActivatePath, activePathId }: Props) {
                 </div>
                 <div className="sk-gap-impact">
                   <span className="label">Est. impact</span>
-                  <span className="value">{fmtUsd(g.impactUsd)}</span>
+                  <span className="value">{fmtUsd(g.impactMid)}</span>
                   <span className="unit">/ yr (hyp.)</span>
                 </div>
               </button>
