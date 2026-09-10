@@ -74,6 +74,20 @@ export function routeMapQuery(utterance: string): MapQueryPlan {
     };
   }
 
+  // toggle_sdoh (Geo choropleth)
+  if (/\b(show|enable|turn on)\b.*\b(svi|sdoh)\b/.test(q) || /^svi$/.test(q) || /^show svi$/.test(q)) {
+    return {
+      interpretation: 'Show SDOH SVI county choropleth',
+      tools: [{ name: 'toggle_sdoh', args: { overlay: 'svi' } }],
+    };
+  }
+  if (/\b(hide|disable|turn off|clear)\b.*\b(svi|sdoh)\b/.test(q) || /^hide (svi|sdoh)$/.test(q)) {
+    return {
+      interpretation: 'Hide SDOH overlays',
+      tools: [{ name: 'toggle_sdoh', args: { overlay: 'off' } }],
+    };
+  }
+
   // filter_layers (Geo)
   if (
     /\b(filter|show|toggle|hide|only)\b.*\b(layer|layers|hospitals?|neighborhood|hq|external|shared|interop|rhapsody)\b/.test(

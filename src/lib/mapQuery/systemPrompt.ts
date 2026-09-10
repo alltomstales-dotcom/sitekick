@@ -35,6 +35,7 @@ Available tools:
 4. focus_site { query: string } — fuzzy-match a site/system by name or id and select it.
 5. show_path { query: string } — fuzzy-match a path narrative (e.g. UPMC ADT, prior auth) and highlight that path.
 6. filter_layers { layers: string[] } — Geo layers: ahn-hospitals | neighborhood | highmark-hq | external | shared. Values may be labels like "AHN hospitals", "HQ", "Shared / interop", "rhapsody".
+6b. toggle_sdoh { overlay: "svi"|"off" } — PA county SVI choropleth under pins (aggregate public · not PHI).
 7. count_systems { entity?: "family"|"external"|"payer"|"shared"|"all" } — answer with count + short list.
 8. explain_edge { query: string } — short SIM-safe blurb for an edge (by protocol or "A to B").
 9. what_is { query: string } — short SIM-safe blurb from node data.
@@ -85,6 +86,17 @@ export const TOOL_DEFINITIONS = [
         exclusive: { type: 'boolean' },
       },
       required: ['layers'],
+    },
+  },
+  {
+    name: 'toggle_sdoh',
+    description: 'Show or hide PA county SVI SDOH choropleth (aggregate public metrics)',
+    parameters: {
+      type: 'object',
+      properties: {
+        overlay: { type: 'string', enum: ['svi', 'off'] },
+      },
+      required: ['overlay'],
     },
   },
   {

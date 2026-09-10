@@ -7,7 +7,7 @@ import {
   REGION_OPTIONS,
 } from '../data/systems';
 import type { DataClass, LegalEntity, PathNarrative, Region, SystemEdge, SystemNode } from '../data/types';
-import { DEFAULT_GEO_LAYERS, type GeoLayer } from '../data/geo';
+import { DEFAULT_GEO_LAYERS, type GeoLayer, type SdohOverlay } from '../data/geo';
 import type { MapQueryEffects } from '../lib/mapQuery';
 import { NodeDetailDrawer } from './NodeDetailDrawer';
 import { GeoResidencyMap } from './GeoResidencyMap';
@@ -157,6 +157,7 @@ export function ResidencyMap({
   const [geoLayers, setGeoLayers] = useState<Record<GeoLayer, boolean>>(() => ({
     ...DEFAULT_GEO_LAYERS,
   }));
+  const [sdohOverlay, setSdohOverlay] = useState<SdohOverlay>('off');
 
   const pathNodeSet = useMemo(
     () => (activePath ? new Set(activePath.nodeIds) : null),
@@ -189,6 +190,7 @@ export function ResidencyMap({
       } else if (effects.geoLayers) {
         setGeoLayers((prev) => ({ ...prev, ...effects.geoLayers }));
       }
+      if (effects.sdohOverlay !== undefined) setSdohOverlay(effects.sdohOverlay);
     },
     [onActivatePath, onClearPath],
   );
@@ -385,6 +387,8 @@ export function ResidencyMap({
             layers={geoLayers}
             onLayersChange={setGeoLayers}
             queryHighlightSet={queryHighlightSet}
+            sdohOverlay={sdohOverlay}
+            onSdohOverlayChange={setSdohOverlay}
           />
         ) : (
         <div className="sk-map-scroll">

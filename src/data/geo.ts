@@ -41,6 +41,16 @@ export const OSM_STYLE_URL =
 /** Compact attribution for UI chrome (tiles carry full OSM/CARTO credit). */
 export const GEO_BASEMAP_ATTRIBUTION = 'Carto Dark Matter · © OSM · © CARTO';
 
+/** Cached PA county SVI choropleth (aggregate public metrics · not PHI). */
+export const PA_SVI_GEOJSON_URL = `${import.meta.env.BASE_URL}geo/pa-counties-svi-2022.json`;
+
+export const GEO_SDOH_ATTRIBUTION = 'CDC/ATSDR SVI 2022 · Census county boundaries';
+
+export type SdohOverlay = 'off' | 'svi';
+
+export const SDOH_DISCLAIMER =
+  'Aggregate public data · ecological fallacy · not eligibility/PHI';
+
 /**
  * Inline raster fallback when the vector style URL fails to load.
  * Uses Carto dark raster tiles so the map never stays blank.

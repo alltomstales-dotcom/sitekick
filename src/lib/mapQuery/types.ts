@@ -9,6 +9,7 @@ export type MapToolName =
   | 'focus_site'
   | 'show_path'
   | 'filter_layers'
+  | 'toggle_sdoh'
   | 'count_systems'
   | 'explain_edge'
   | 'what_is'
@@ -51,6 +52,8 @@ export interface MapQueryEffects {
   geoLayers?: Partial<Record<GeoLayer, boolean>>;
   /** Reset geo layers to defaults */
   resetGeoLayers?: boolean;
+  /** SDOH choropleth overlay on Geo map: 'svi' | 'off' */
+  sdohOverlay?: 'svi' | 'off';
 }
 
 export interface MapToolExecution {

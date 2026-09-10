@@ -240,7 +240,23 @@ function runOne(call: MapToolCall): { result: MapToolResult; effects: MapQueryEf
         },
       };
     }
+    case 'toggle_sdoh': {
+      const overlayRaw = String(args.overlay ?? 'svi').toLowerCase();
+      const overlay = overlayRaw === 'off' || overlayRaw === 'none' || overlayRaw === 'hide' ? 'off' : 'svi';
+      return {
+        result: {
+          ok: true,
+          tool: name,
+          message:
+            overlay === 'svi'
+              ? 'SDOH: SVI choropleth on · aggregate public · SIM'
+              : 'SDOH overlays off · SIM',
+        },
+        effects: { sdohOverlay: overlay },
+      };
+    }
     case 'filter_layers': {
+
       const layers = parseLayers(args.layers);
       if (layers.length === 0) {
         return {
@@ -358,6 +374,7 @@ function runOne(call: MapToolCall): { result: MapToolResult; effects: MapQueryEf
           pathId: null,
           resetGeoLayers: true,
           geoLayers: { ...DEFAULT_GEO_LAYERS },
+          sdohOverlay: 'off',
         },
       };
     }
