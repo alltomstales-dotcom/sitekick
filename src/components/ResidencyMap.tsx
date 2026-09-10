@@ -55,7 +55,7 @@ const LAYOUT: Record<string, { x: number; y: number }> = {
 };
 
 const CANVAS_W = 1280;
-const CANVAS_H = 760;
+const CANVAS_H = 780;
 
 /** Lane bands drawn behind nodes */
 const LANES = [
@@ -75,10 +75,21 @@ const LANES = [
     x: 24,
     y: 432,
     w: 540,
-    h: 280,
+    h: 300,
     stroke: '#f59e0b',
     fill: 'rgba(245, 158, 11, 0.06)',
   },
+] as const;
+
+const AHN_MAPPED_HOSPITAL_IDS = [
+  'ahn-agh',
+  'ahn-westpenn',
+  'ahn-forbes',
+  'ahn-jefferson',
+  'ahn-stvincent',
+  'ahn-wexford',
+  'ahn-beaver',
+  'ahn-sewickley',
 ] as const;
 
 function edgeStroke(status: SystemEdge['status']): string {
@@ -182,10 +193,10 @@ export function ResidencyMap() {
         </label>
         <div className="sk-legend">
           <span>
-            <i className="dot family" /> Family
+            <i className="dot family" /> Family (AHN)
           </span>
           <span>
-            <i className="dot external" /> External
+            <i className="dot external" /> External Network
           </span>
           <span>
             <i className="dot payer" /> Payer
@@ -331,6 +342,11 @@ export function ResidencyMap() {
             {filteredSystems.map((s: SystemNode) => {
               const pos = LAYOUT[s.id] ?? { x: 100, y: 100 };
               const isSelected = selectedId === s.id;
+              const rosterMore =
+                s.id === 'ahn-hub' && s.hospitalList
+                  ? s.hospitalList.length -
+                    AHN_MAPPED_HOSPITAL_IDS.filter((id) => filteredIds.has(id)).length
+                  : 0;
               return (
                 <button
                   key={s.id}
@@ -354,6 +370,9 @@ export function ResidencyMap() {
                   <div className="sk-flow-node-meta">
                     {s.legalEntity} · {s.region}
                   </div>
+                  {rosterMore > 0 ? (
+                    <div className="sk-flow-node-cue">+{rosterMore} more in roster</div>
+                  ) : null}
                 </button>
               );
             })}
