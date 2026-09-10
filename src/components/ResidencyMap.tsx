@@ -18,7 +18,7 @@ const ENTITY_COLOR: Record<LegalEntity, string> = {
 };
 
 const NODE_W = 148;
-const NODE_H = 56;
+const NODE_H = 64;
 
 /** Absolute canvas positions — two provider lanes + shared + payer */
 const LAYOUT: Record<string, { x: number; y: number }> = {
@@ -456,6 +456,9 @@ export function ResidencyMap({ activePath, onClearPath }: Props) {
                   <div className="sk-flow-node-title">{s.shortName}</div>
                   <div className="sk-flow-node-meta">
                     {s.legalEntity} · {s.region}
+                  </div>
+                  <div className="sk-flow-node-residency" title={`${s.hosting} · ${s.residency}`}>
+                    {s.residency.length > 28 ? `${s.residency.slice(0, 26)}…` : s.residency}
                   </div>
                   {rosterMore > 0 ? (
                     <div className="sk-flow-node-cue">+{rosterMore} more in roster</div>

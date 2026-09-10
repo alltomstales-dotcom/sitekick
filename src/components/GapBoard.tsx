@@ -112,10 +112,12 @@ export function GapBoard({ onActivatePath, activePathId }: Props) {
       <div className="sk-demo-narratives">
         <h3>Demo path narratives</h3>
         <p className="sk-muted">
-          Curated stories ({PATH_NARRATIVES.length}) — also reachable from linked gaps above.
+          Curated gap stories (
+          {PATH_NARRATIVES.filter((n) => n.gapId).length}) — also reachable from linked gaps
+          above. Feed Health has its own map paths.
         </p>
         <div className="sk-demo-narrative-row">
-          {PATH_NARRATIVES.map((n) => (
+          {PATH_NARRATIVES.filter((n) => n.gapId).map((n) => (
             <button
               key={n.id}
               type="button"

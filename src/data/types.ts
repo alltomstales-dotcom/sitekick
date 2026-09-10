@@ -70,6 +70,8 @@ export interface PathNarrative {
   id: string;
   /** Optional link to a Gap / $$ Board item */
   gapId?: string;
+  /** Optional link to a Feed Health card (system id) */
+  feedId?: string;
   title: string;
   /** Short problem statement */
   problem: string;

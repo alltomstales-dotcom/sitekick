@@ -31,7 +31,9 @@ export default function App() {
           <ResidencyMap activePath={activePath} onClearPath={clearPath} />
         )}
         {view === 'matrix' && <AccessMatrix />}
-        {view === 'feeds' && <FeedHealth />}
+        {view === 'feeds' && (
+          <FeedHealth onActivatePath={activatePath} activePathId={activePathId} />
+        )}
         {view === 'gaps' && (
           <GapBoard onActivatePath={activatePath} activePathId={activePathId} />
         )}

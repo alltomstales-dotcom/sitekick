@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react';
+import { Route } from 'lucide-react';
 import { SYSTEMS } from '../data/systems';
+import { getNarrativeForFeed } from '../data/narratives';
 import type { FeedMetric } from '../data/types';
 
 const FEED_SYSTEMS = [
@@ -57,7 +59,12 @@ function tick(prev: FeedMetric[]): FeedMetric[] {
   });
 }
 
-export function FeedHealth() {
+interface Props {
+  onActivatePath: (narrativeId: string) => void;
+  activePathId: string | null;
+}
+
+export function FeedHealth({ onActivatePath, activePathId }: Props) {
   const [metrics, setMetrics] = useState<FeedMetric[]>(seedMetrics);
   const [live, setLive] = useState(true);
   const [lastTick, setLastTick] = useState(() => new Date());
@@ -85,6 +92,10 @@ export function FeedHealth() {
           <span className={`sk-live-dot ${live ? 'on' : ''}`} />
           {live ? 'LIVE' : 'PAUSED'} · tick {lastTick.toLocaleTimeString()}
         </div>
+        <p className="sk-feed-cue">
+          <Route size={13} strokeWidth={2.5} />
+          Click a feed to see it on the map
+        </p>
         <div className="sk-feed-summary">
           <span className="ok">{healthy} healthy</span>
           <span className="warn">{warning} warning</span>
@@ -98,8 +109,20 @@ export function FeedHealth() {
       <div className="sk-feed-grid">
         {metrics.map((m) => {
           const sys = SYSTEMS.find((s) => s.id === m.systemId);
+          const narrative = getNarrativeForFeed(m.systemId);
+          const hasPath = narrative != null;
+          const isActive = narrative != null && activePathId === narrative.id;
           return (
-            <article key={m.systemId} className={`sk-feed-card status-${m.status}`}>
+            <button
+              key={m.systemId}
+              type="button"
+              className={`sk-feed-card status-${m.status}${hasPath ? ' clickable' : ''}${isActive ? ' path-active' : ''}`}
+              onClick={() => {
+                if (narrative) onActivatePath(narrative.id);
+              }}
+              disabled={!hasPath}
+              title={hasPath ? 'Show path on Residency Map' : 'No curated feed path'}
+            >
               <header>
                 <h3>{sys?.shortName ?? m.systemId}</h3>
                 <span className={`sk-pill status-${m.status}`}>{m.status}</span>
@@ -128,7 +151,13 @@ export function FeedHealth() {
                   style={{ width: `${Math.min(100, (m.messageRate / 450) * 100)}%` }}
                 />
               </div>
-            </article>
+              {hasPath ? (
+                <div className="sk-feed-path-cue">
+                  <Route size={11} strokeWidth={2.5} />
+                  View path
+                </div>
+              ) : null}
+            </button>
           );
         })}
       </div>
