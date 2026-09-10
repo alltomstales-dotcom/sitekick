@@ -41,11 +41,13 @@ const LAYOUT: Record<string, { x: number; y: number }> = {
   wellspan: { x: 48, y: 624 },
   'tower-health': { x: 220, y: 624 },
 
-  // Shared spine
+  // Shared spine + Axon
   mpi: { x: 620, y: 160 },
   rhapsody: { x: 620, y: 280 },
+  'rhapsody-axon': { x: 720, y: 200 },
   'edw-rwd': { x: 620, y: 400 },
   'rhapsody-edge': { x: 820, y: 280 },
+  'axon-connect': { x: 920, y: 200 },
   'hie-gw': { x: 820, y: 420 },
 
   // Payer
@@ -125,9 +127,18 @@ function edgeMidpoint(sourceId: string, targetId: string): { x: number; y: numbe
 interface Props {
   activePath: PathNarrative | null;
   onClearPath: () => void;
+  /** Nodes confirmed via Day-1 Interview answers */
+  interviewedNodes?: Set<string>;
+  /** Edges confirmed via Day-1 Interview answers */
+  interviewedEdges?: Set<string>;
 }
 
-export function ResidencyMap({ activePath, onClearPath }: Props) {
+export function ResidencyMap({
+  activePath,
+  onClearPath,
+  interviewedNodes,
+  interviewedEdges,
+}: Props) {
   const [dataClass, setDataClass] = useState<DataClass | 'all'>('all');
   const [entity, setEntity] = useState<LegalEntity | 'all'>('all');
   const [region, setRegion] = useState<Region | 'all'>('all');
@@ -274,6 +285,15 @@ export function ResidencyMap({ activePath, onClearPath }: Props) {
           <span>
             <i className="line missing" /> Missing
           </span>
+          <span className="sk-legend-sep" aria-hidden>
+            |
+          </span>
+          <span>
+            <i className="conf-assumed" /> Assumed
+          </span>
+          <span>
+            <i className="conf-interviewed" /> Interviewed
+          </span>
         </div>
       </div>
 
@@ -393,10 +413,19 @@ export function ResidencyMap({ activePath, onClearPath }: Props) {
                       d={edgePath(e.source, e.target)}
                       fill="none"
                       stroke={stroke}
-                      strokeWidth={onPath ? 3.25 : 1.75}
+                      strokeWidth={onPath ? 3.25 : interviewedEdges?.has(e.id) ? 2.35 : 1.75}
                       markerEnd={marker}
                       strokeDasharray={
-                        e.status === 'missing' || e.status === 'broken' ? '5 4' : undefined
+                        e.status === 'missing' || e.status === 'broken'
+                          ? '5 4'
+                          : interviewedEdges != null && !interviewedEdges.has(e.id)
+                            ? '4 3'
+                            : undefined
+                      }
+                      opacity={
+                        interviewedEdges != null && !interviewedEdges.has(e.id) && !onPath
+                          ? 0.55
+                          : undefined
                       }
                     />
                     <rect
@@ -434,16 +463,23 @@ export function ResidencyMap({ activePath, onClearPath }: Props) {
                   ? s.hospitalList.length -
                     AHN_MAPPED_HOSPITAL_IDS.filter((id) => filteredIds.has(id)).length
                   : 0;
+              const interviewed = interviewedNodes?.has(s.id) ?? false;
+              const assumed = interviewedNodes != null && !interviewed;
               return (
                 <button
                   key={s.id}
                   type="button"
-                  className={`sk-flow-node entity-${s.legalEntity}${isSelected ? ' selected' : ''}${onPath ? ' on-path' : ''}${dimmed ? ' dimmed' : ''}`}
+                  className={`sk-flow-node entity-${s.legalEntity}${isSelected ? ' selected' : ''}${onPath ? ' on-path' : ''}${dimmed ? ' dimmed' : ''}${interviewed ? ' interviewed' : ''}${assumed ? ' assumed' : ''}`}
                   style={{
                     left: pos.x,
                     top: pos.y,
                     width: NODE_W,
-                    borderColor: onPath ? '#38bdf8' : ENTITY_COLOR[s.legalEntity],
+                    borderColor: onPath
+                      ? '#38bdf8'
+                      : interviewed
+                        ? '#34d399'
+                        : ENTITY_COLOR[s.legalEntity],
+                    borderStyle: assumed ? 'dashed' : 'solid',
                   }}
                   onClick={() => setSelectedId(s.id)}
                   aria-pressed={isSelected}
@@ -451,9 +487,26 @@ export function ResidencyMap({ activePath, onClearPath }: Props) {
                 >
                   <div
                     className="sk-flow-node-accent"
-                    style={{ background: onPath ? '#38bdf8' : ENTITY_COLOR[s.legalEntity] }}
+                    style={{
+                      background: onPath
+                        ? '#38bdf8'
+                        : interviewed
+                          ? '#34d399'
+                          : ENTITY_COLOR[s.legalEntity],
+                    }}
                   />
-                  <div className="sk-flow-node-title">{s.shortName}</div>
+                  <div className="sk-flow-node-title">
+                    {s.shortName}
+                    {interviewed ? (
+                      <span className="sk-interviewed-badge" title="Confirmed in Day-1 Interview">
+                        ✓
+                      </span>
+                    ) : assumed ? (
+                      <span className="sk-assumed-badge" title="Assumed — not yet interviewed">
+                        ?
+                      </span>
+                    ) : null}
+                  </div>
                   <div className="sk-flow-node-meta">
                     {s.legalEntity} · {s.region}
                   </div>

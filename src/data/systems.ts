@@ -351,6 +351,38 @@ export const SYSTEMS: SystemNode[] = [
     accessPaths: ['Secure FTP', 'HTTPS APIs', 'VPN tunnels'],
   },
   {
+    id: 'rhapsody-axon',
+    label: 'Rhapsody Axon (SIM)',
+    shortName: 'Rhap Axon',
+    vendor: 'Rhapsody / Lyniate',
+    hosting: 'Embedded in Rhapsody / Corepoint',
+    residency: 'Shared (with engine)',
+    legalEntity: 'shared',
+    region: 'central',
+    dataClasses: ['clinical', 'claims', 'admin', 'identity'],
+    auth: 'Customer chat.axon.rhapsody.health (SIM)',
+    confidence: 'medium',
+    description:
+      'AI integration agent embedded in Rhapsody/Corepoint (not standalone). Interprets specs, clarifies build, proposes mappings/transform logic, and troubleshoots — grounded in Rhapsody/Corepoint docs + FHIR/HL7v2/APIs/X12 (SIM).',
+    accessPaths: ['Axon chat (customer)', 'Propose mappings', 'Transform assist', 'Route troubleshooting'],
+  },
+  {
+    id: 'axon-connect',
+    label: 'Axon Connect (SIM)',
+    shortName: 'Axon Connect',
+    vendor: 'Rhapsody / Lyniate',
+    hosting: 'Capability on Axon + Edge / partner paths',
+    residency: 'Multi-region edge (playbooks)',
+    legalEntity: 'shared',
+    region: 'cloud',
+    dataClasses: ['clinical', 'admin', 'identity'],
+    auth: 'Via Axon + partner onboarding workspace (SIM)',
+    confidence: 'medium',
+    description:
+      'Axon Connect extends Axon for provider–vendor integrations: upload specs/business/security requirements → AI-ready playbooks so providers execute integrations with fewer clarification cycles and faster go-live (SIM).',
+    accessPaths: ['Spec upload → playbook', 'Partner onboarding', 'Edge/HIE playbook targets'],
+  },
+  {
     id: 'mpi',
     label: 'Enterprise MPI (SIM)',
     shortName: 'MPI',
@@ -682,6 +714,69 @@ export const EDGES: SystemEdge[] = [
     dataClasses: ['clinical'],
   },
 
+
+  // Rhapsody Axon + Axon Connect (SIM)
+  {
+    id: 'e-rhap-axon',
+    source: 'rhapsody',
+    target: 'rhapsody-axon',
+    protocol: 'Embedded agent',
+    blockers: [],
+    dollarLevers: ['Mapping cycle time ↓'],
+    status: 'active',
+    dataClasses: ['clinical', 'claims', 'admin'],
+  },
+  {
+    id: 'e-axon-connect',
+    source: 'rhapsody-axon',
+    target: 'axon-connect',
+    protocol: 'Playbook capability',
+    blockers: [],
+    dollarLevers: ['Partner go-live TAT ↓'],
+    status: 'active',
+    dataClasses: ['clinical', 'admin'],
+  },
+  {
+    id: 'e-connect-edge',
+    source: 'axon-connect',
+    target: 'rhapsody-edge',
+    protocol: 'Partner playbook → Edge',
+    blockers: ['Playbooks not yet authored for all externals'],
+    dollarLevers: ['External onboarding velocity'],
+    status: 'constrained',
+    dataClasses: ['clinical', 'admin'],
+  },
+  {
+    id: 'e-connect-upmc',
+    source: 'axon-connect',
+    target: 'upmc',
+    protocol: 'Axon Connect playbook (target)',
+    blockers: ['Specs/security reqs not uploaded', 'Competitive sharing limits'],
+    dollarLevers: ['UPMC continuity go-live'],
+    status: 'missing',
+    dataClasses: ['clinical', 'identity'],
+  },
+  {
+    id: 'e-connect-ind',
+    source: 'axon-connect',
+    target: 'independence-hs',
+    protocol: 'Axon Connect playbook (target)',
+    blockers: ['Narrow-network product variance', 'No playbook yet'],
+    dollarLevers: ['Independence onboarding'],
+    status: 'missing',
+    dataClasses: ['clinical', 'admin'],
+  },
+  {
+    id: 'e-axon-ahn-map',
+    source: 'rhapsody-axon',
+    target: 'ahn-hub',
+    protocol: 'Mapping assist (AHN routes)',
+    blockers: ['Day-1 spike not yet run with Axon'],
+    dollarLevers: ['CRD/HL7 transform accelerate'],
+    status: 'constrained',
+    dataClasses: ['clinical', 'admin'],
+  },
+
   // Shared spine
   {
     id: 'e-rhap-edge',
@@ -839,8 +934,28 @@ export const GAPS: GapItem[] = [
     severity: 'critical',
   },
   {
-    id: 'g3',
+    id: 'g9',
     rank: 3,
+    title: 'AHN→Rhapsody mapping without Axon assist',
+    systems: ['ahn-hub', 'rhapsody-axon'],
+    impactUsd: 2100000,
+    hypothesis: 'Manual HL7v2/FHIR mapping and transform rework on AHN family routes burns week-one; Axon-in-engine assist (propose mappings, transform logic) cuts cycle time — est. $2.1M/yr opportunity cost (SIM).',
+    blockers: ['Axon Day-1 spike not scheduled', 'Spec ambiguity in CRD/HL7 routes', 'Tribal knowledge in interface team'],
+    severity: 'critical',
+  },
+  {
+    id: 'g10',
+    rank: 4,
+    title: 'External partner onboarding without Axon Connect playbooks',
+    systems: ['axon-connect', 'upmc'],
+    impactUsd: 1750000,
+    hypothesis: 'UPMC/Independence/vendor onboarding stalls on clarification cycles; Axon Connect playbooks from uploaded specs/security reqs accelerate go-live — est. $1.75M/yr (SIM).',
+    blockers: ['No Axon Connect playbooks authored', 'Specs/security packets incomplete', 'Together Blue / product variance'],
+    severity: 'high',
+  },
+  {
+    id: 'g3',
+    rank: 5,
     title: 'UPMC clinical → Highmark constrained',
     systems: ['upmc', 'hie-gw'],
     impactUsd: 1900000,
@@ -850,7 +965,7 @@ export const GAPS: GapItem[] = [
   },
   {
     id: 'g4',
-    rank: 4,
+    rank: 6,
     title: 'HIE clinical → payer use constrained',
     systems: ['hie-gw', 'edw-rwd'],
     impactUsd: 1500000,
@@ -860,7 +975,7 @@ export const GAPS: GapItem[] = [
   },
   {
     id: 'g5',
-    rank: 5,
+    rank: 7,
     title: 'Tower / WellSpan Edge mediation incomplete',
     systems: ['tower-health', 'rhapsody-edge'],
     impactUsd: 1100000,
@@ -870,7 +985,7 @@ export const GAPS: GapItem[] = [
   },
   {
     id: 'g6',
-    rank: 6,
+    rank: 8,
     title: 'External MPI coverage incomplete',
     systems: ['ext-hub', 'mpi'],
     impactUsd: 640000,
@@ -880,7 +995,7 @@ export const GAPS: GapItem[] = [
   },
   {
     id: 'g7',
-    rank: 7,
+    rank: 9,
     title: 'Penn State referral continuity gaps',
     systems: ['penn-state', 'ahn-hub'],
     impactUsd: 520000,
@@ -890,7 +1005,7 @@ export const GAPS: GapItem[] = [
   },
   {
     id: 'g8',
-    rank: 8,
+    rank: 10,
     title: 'Independence HS narrow-network tiering',
     systems: ['independence-hs', 'hmk-elig'],
     impactUsd: 480000,
@@ -916,7 +1031,7 @@ export function getReachability(fromId: string, toId: string): Reachability {
   }
 
   // 1-hop via Rhapsody / edge / MPI / HIE
-  const hubs = ['rhapsody', 'rhapsody-edge', 'mpi', 'hie-gw', 'ahn-hub', 'ext-hub'];
+  const hubs = ['rhapsody', 'rhapsody-edge', 'mpi', 'hie-gw', 'ahn-hub', 'ext-hub', 'rhapsody-axon', 'axon-connect'];
   for (const hub of hubs) {
     const a = EDGES.find(
       (e) =>

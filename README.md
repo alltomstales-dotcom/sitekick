@@ -11,7 +11,8 @@ V0 concept demo: a **Site Survey Index** dashboard for forward-deployed healthca
 2. **Access matrix** — heat map of systems × reachability (`path` / `constrained` / `none` / `unknown`).
 3. **Feed health** — simulated realtime ticks every 2–3s (message rate, lag, last-seen, errors) with a live indicator. Click a feed card to jump to the Residency Map and highlight the related systems + edges (same path UX as gaps).
 4. **Gap / $$ board** — ranked missing/broken paths with estimated dollar-impact hypotheses. Click a curated gap to jump to the map path story.
-5. **Exec brief export** — printable one-pager (`window.print()`) plus `.md` download: Family vs External snapshot, top $$ gaps, week-one spike / SOW line, SIM disclaimer.
+5. **Day-1 Interview** — guided CoS checklist (systems & ownership, residency & access, cross-silo truth, engagement framing). Answers mark linked systems **interviewed** on the Residency Map (assumed = muted/dashed → interviewed = solid/✓ badge). Includes Scout-sharpened Highmark↔AHN prompts + **Rhapsody Axon** / **Axon Connect** (SIM). Reset for demo replay.
+6. **Exec brief export** — printable one-pager (`window.print()`) plus `.md` download: Family vs External snapshot, top $$ gaps, week-one spike / SOW line with Axon + Axon Connect tooling, SIM disclaimer.
 
 ## Stack
 
@@ -35,4 +36,4 @@ npm run preview  # preview the production build
 ## Notes
 
 - Designed for laptop / conference-room demo (dark healthcare-ops aesthetic).
-- Systems cover AHN family hospitals, external network providers (UPMC, Independence, Penn State, WellSpan, Tower), Highmark claims/eligibility, prior auth, Rhapsody + Edge, MPI, HIE, and EDW/RWD — all labeled **(SIM)**.
+- Systems cover AHN family hospitals, external network providers (UPMC, Independence, Penn State, WellSpan, Tower), Highmark claims/eligibility, prior auth, Rhapsody + Edge, **Rhapsody Axon** + **Axon Connect**, MPI, HIE, and EDW/RWD — all labeled **(SIM)**.

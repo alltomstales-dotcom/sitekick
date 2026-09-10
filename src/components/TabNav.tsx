@@ -1,11 +1,12 @@
 import type { ViewId } from '../data/types';
-import { Network, Grid3X3, Activity, DollarSign } from 'lucide-react';
+import { Network, Grid3X3, Activity, DollarSign, ClipboardList } from 'lucide-react';
 
 const TABS: { id: ViewId; label: string; icon: typeof Network }[] = [
   { id: 'map', label: 'Residency Map', icon: Network },
   { id: 'matrix', label: 'Access Matrix', icon: Grid3X3 },
   { id: 'feeds', label: 'Feed Health', icon: Activity },
   { id: 'gaps', label: 'Gap / $$ Board', icon: DollarSign },
+  { id: 'interview', label: 'Day-1 Interview', icon: ClipboardList },
 ];
 
 interface Props {

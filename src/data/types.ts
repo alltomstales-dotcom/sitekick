@@ -64,7 +64,7 @@ export interface FeedMetric {
   status: 'healthy' | 'warning' | 'critical';
 }
 
-export type ViewId = 'map' | 'matrix' | 'feeds' | 'gaps';
+export type ViewId = 'map' | 'matrix' | 'feeds' | 'gaps' | 'interview';
 
 export interface PathNarrative {
   id: string;
@@ -85,4 +85,28 @@ export interface PathNarrative {
   nodeIds: string[];
   /** Edge ids to brighten on the residency map */
   edgeIds: string[];
+}
+
+export type InterviewSectionId =
+  | 'systems'
+  | 'residency'
+  | 'cross-silo'
+  | 'engagement';
+
+export type InterviewAnswerStatus = 'unanswered' | 'answered';
+
+export interface InterviewQuestion {
+  id: string;
+  section: InterviewSectionId;
+  /** Concrete FDE prompt (Highmark Hybrid SIM–aware) */
+  text: string;
+  /** Hint / why this matters (optional UI cue) */
+  why?: string;
+  nodeIds: string[];
+  edgeIds?: string[];
+}
+
+export interface InterviewAnswer {
+  status: InterviewAnswerStatus;
+  notes: string;
 }

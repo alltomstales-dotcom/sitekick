@@ -87,6 +87,34 @@ export const PATH_NARRATIVES: PathNarrative[] = [
     nodeIds: ['ext-hub', 'prior-auth', 'rhapsody-edge'],
     edgeIds: ['e-ext-pa', 'e-ext-hub-edge'],
   },
+  {
+    id: 'n-axon-mapping',
+    gapId: 'g9',
+    title: 'Axon accelerates AHN→Rhapsody mapping',
+    problem:
+      'AHN family HL7v2/FHIR routes into Rhapsody still depend on manual mapping and tribal transform knowledge; week-one spikes stall on spec clarification.',
+    systemsTouched: ['AHN Hub', 'Rhapsody', 'Rhap Axon', 'Prior Auth'],
+    residencyConstraint:
+      'Shared engine residency — Axon is embedded in Rhapsody/Corepoint (not standalone); assists mappings/transforms grounded in HL7v2/FHIR/X12 docs (SIM).',
+    dollarLever:
+      'Axon-in-engine assist cuts mapping cycle time on family CRD/HL7 paths — ~$2.1M/yr opportunity (hyp., SIM).',
+    nodeIds: ['ahn-hub', 'rhapsody', 'rhapsody-axon', 'prior-auth'],
+    edgeIds: ['e-ahn-hub-rhap', 'e-rhap-axon', 'e-axon-ahn-map', 'e-ahn-pa'],
+  },
+  {
+    id: 'n-axon-connect',
+    gapId: 'g10',
+    title: 'Axon Connect playbook for external partner',
+    problem:
+      'UPMC/Independence onboarding burns clarification cycles on specs, security, and product-network rules; Edge ACL tickets alone do not produce a reusable playbook.',
+    systemsTouched: ['Axon Connect', 'Rhap Axon', 'Rhap Edge', 'UPMC', 'Independence HS'],
+    residencyConstraint:
+      'Axon Connect targets Edge/partner paths — upload specs/business/security reqs → AI-ready playbooks for faster external go-live (SIM).',
+    dollarLever:
+      'Fewer clarification cycles / faster partner go-live — ~$1.75M/yr (hyp., SIM).',
+    nodeIds: ['axon-connect', 'rhapsody-axon', 'rhapsody-edge', 'upmc', 'independence-hs'],
+    edgeIds: ['e-axon-connect', 'e-connect-edge', 'e-connect-upmc', 'e-connect-ind'],
+  },
 
   // ── Feed Health → map paths (feeds without a gap narrative) ──────────
   {

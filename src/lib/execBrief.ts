@@ -48,9 +48,10 @@ Top ${topGaps.length} gaps hypothesized impact: **${fmtUsd(totalImpact)}/yr**.
 ${gapLines}
 
 ## Recommended week-one spike / SOW line
-1. **Spike (3–5 days):** Trace AHN family → Prior Auth CRD path end-to-end; quantify fax/portal TAT vs pilot CRD; draft DTR questionnaire backlog.
-2. **SOW line:** "Enable production CRD/DTR for AHN family prior auth + Edge mediation checklist for top external hubs (UPMC, Independence, Tower/WellSpan); MPI enroll gap analysis for external MRNs."
-3. **Exit criteria:** Ranked path heatmap signed by payer + family ops; week-two backlog sized for Edge ACL + MPI match-rate workstream.
+1. **Spike (3–5 days):** Trace AHN family → Prior Auth CRD path end-to-end with **Rhapsody Axon** (embedded agent) to propose HL7v2/FHIR mappings and transform logic; quantify fax/portal TAT vs pilot CRD; draft DTR questionnaire backlog.
+2. **SOW line:** "Enable production CRD/DTR for AHN family prior auth using Axon-assisted mapping inside Rhapsody; author **Axon Connect** playbooks (specs/business/security → AI-ready) for top external hubs (UPMC, Independence, Tower/WellSpan); MPI enroll gap analysis for external MRNs."
+3. **Tooling:** Week-one recommended stack — **Rhapsody Axon** (Day-1 spike inside engine via chat.axon.rhapsody.health) + **Axon Connect** (external partner/vendor onboarding playbooks). All SIM-labeled in this demo.
+4. **Exit criteria:** Ranked path heatmap signed by payer + family ops; Axon mapping assist logged for family routes; Axon Connect playbook stubs for ≥1 external; week-two backlog sized for Edge ACL + MPI match-rate workstream.
 
 ## Disclaimer
 All figures, systems, and paths in this brief are **synthetic demo data (SIM)** for concept review only. Not for contracting, clinical, or production use.
@@ -179,9 +180,10 @@ export function buildExecBriefHtml(): string {
 
   <h2>Recommended week-one spike / SOW line</h2>
   <ol class="sow">
-    <li><strong>Spike (3–5 days):</strong> Trace AHN family → Prior Auth CRD path end-to-end; quantify fax/portal TAT vs pilot CRD; draft DTR questionnaire backlog.</li>
-    <li><strong>SOW line:</strong> Enable production CRD/DTR for AHN family prior auth + Edge mediation checklist for top external hubs (UPMC, Independence, Tower/WellSpan); MPI enroll gap analysis for external MRNs.</li>
-    <li><strong>Exit criteria:</strong> Ranked path heatmap signed by payer + family ops; week-two backlog sized for Edge ACL + MPI match-rate workstream.</li>
+    <li><strong>Spike (3–5 days):</strong> Trace AHN family → Prior Auth CRD path end-to-end with <strong>Rhapsody Axon</strong> (embedded agent) to propose HL7v2/FHIR mappings and transform logic; quantify fax/portal TAT vs pilot CRD; draft DTR questionnaire backlog.</li>
+    <li><strong>SOW line:</strong> Enable production CRD/DTR for AHN family prior auth using Axon-assisted mapping inside Rhapsody; author <strong>Axon Connect</strong> playbooks (specs/business/security → AI-ready) for top external hubs (UPMC, Independence, Tower/WellSpan); MPI enroll gap analysis for external MRNs.</li>
+    <li><strong>Tooling:</strong> Week-one recommended stack — <strong>Rhapsody Axon</strong> (Day-1 spike inside engine via chat.axon.rhapsody.health) + <strong>Axon Connect</strong> (external partner/vendor onboarding playbooks). All SIM-labeled in this demo.</li>
+    <li><strong>Exit criteria:</strong> Ranked path heatmap signed by payer + family ops; Axon mapping assist logged for family routes; Axon Connect playbook stubs for ≥1 external; week-two backlog sized for Edge ACL + MPI match-rate workstream.</li>
   </ol>
 
   <h2>Disclaimer</h2>
