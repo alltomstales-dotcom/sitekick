@@ -8,7 +8,10 @@ import {
 } from '../data/systems';
 import type { DataClass, LegalEntity, PathNarrative, Region, SystemEdge, SystemNode } from '../data/types';
 import { NodeDetailDrawer } from './NodeDetailDrawer';
+import { GeoResidencyMap } from './GeoResidencyMap';
 import { X } from 'lucide-react';
+
+type MapMode = 'logical' | 'geo';
 
 const ENTITY_COLOR: Record<LegalEntity, string> = {
   family: '#10b981',
@@ -143,6 +146,7 @@ export function ResidencyMap({
   const [entity, setEntity] = useState<LegalEntity | 'all'>('all');
   const [region, setRegion] = useState<Region | 'all'>('all');
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [mapMode, setMapMode] = useState<MapMode>('logical');
 
   const pathNodeSet = useMemo(
     () => (activePath ? new Set(activePath.nodeIds) : null),
@@ -221,6 +225,27 @@ export function ResidencyMap({
       ) : null}
 
       <div className="sk-filters">
+        <div className="sk-mode-toggle" role="group" aria-label="Map mode">
+          <span className="sk-mode-toggle-label">View</span>
+          <div className="sk-mode-toggle-btns">
+            <button
+              type="button"
+              className={mapMode === 'logical' ? 'active' : ''}
+              aria-pressed={mapMode === 'logical'}
+              onClick={() => setMapMode('logical')}
+            >
+              Logical
+            </button>
+            <button
+              type="button"
+              className={mapMode === 'geo' ? 'active' : ''}
+              aria-pressed={mapMode === 'geo'}
+              onClick={() => setMapMode('geo')}
+            >
+              Geo
+            </button>
+          </div>
+        </div>
         <label>
           Data class
           <select
@@ -298,6 +323,17 @@ export function ResidencyMap({
       </div>
 
       <div className="sk-map-stage">
+        {mapMode === 'geo' ? (
+          <GeoResidencyMap
+            systems={filteredSystems}
+            edges={visibleEdges}
+            selectedId={selectedId}
+            onSelect={setSelectedId}
+            activePath={activePath}
+            pathNodeSet={pathNodeSet}
+            pathEdgeSet={pathEdgeSet}
+          />
+        ) : (
         <div className="sk-map-scroll">
           <div className="sk-map-canvas" style={{ width: CANVAS_W, height: CANVAS_H }}>
             <svg
@@ -521,6 +557,7 @@ export function ResidencyMap({
             })}
           </div>
         </div>
+        )}
         <NodeDetailDrawer node={selected} edges={EDGES} onClose={() => setSelectedId(null)} />
       </div>
     </div>

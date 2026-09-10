@@ -271,6 +271,188 @@
   min-height: 0;
 }
 
+.sk-mode-toggle {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+.sk-mode-toggle-label {
+  font-size: 0.7rem;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.sk-mode-toggle-btns {
+  display: inline-flex;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+  background: #0b1220;
+}
+.sk-mode-toggle-btns button {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  font-size: 0.8rem;
+  font-weight: 600;
+  padding: 0.35rem 0.75rem;
+  cursor: pointer;
+  min-width: 72px;
+}
+.sk-mode-toggle-btns button + button {
+  border-left: 1px solid var(--border);
+}
+.sk-mode-toggle-btns button:hover {
+  color: var(--text);
+  background: rgba(148, 163, 184, 0.08);
+}
+.sk-mode-toggle-btns button.active {
+  color: #e2e8f0;
+  background: rgba(56, 189, 248, 0.18);
+  box-shadow: inset 0 0 0 1px rgba(56, 189, 248, 0.35);
+}
+
+
+.sk-geo-layers {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  z-index: 3;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  justify-content: flex-end;
+  max-width: min(420px, calc(100% - 24px));
+}
+.sk-geo-layer-btn {
+  appearance: none;
+  border: 1px solid rgba(51, 65, 85, 0.95);
+  background: rgba(15, 23, 42, 0.9);
+  color: #94a3b8;
+  font: inherit;
+  font-size: 0.68rem;
+  font-weight: 650;
+  padding: 0.28rem 0.55rem;
+  border-radius: 999px;
+  cursor: pointer;
+  letter-spacing: 0.01em;
+}
+.sk-geo-layer-btn:hover {
+  color: #e2e8f0;
+  border-color: #64748b;
+}
+.sk-geo-layer-btn.active {
+  color: #e2e8f0;
+  border-color: rgba(56, 189, 248, 0.55);
+  background: rgba(56, 189, 248, 0.16);
+}
+.sk-geo-caveat {
+  position: absolute;
+  left: 12px;
+  bottom: 40px;
+  z-index: 3;
+  max-width: min(320px, calc(100% - 24px));
+  font-size: 0.68rem;
+  font-weight: 650;
+  color: #fde68a;
+  background: rgba(69, 26, 3, 0.88);
+  border: 1px solid rgba(251, 191, 36, 0.45);
+  border-radius: 8px;
+  padding: 0.35rem 0.55rem;
+  line-height: 1.3;
+  letter-spacing: 0.01em;
+}
+
+.sk-geo-wrap {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  min-height: 780px;
+}
+.sk-geo-map {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+.sk-geo-sim-note {
+  position: absolute;
+  left: 12px;
+  bottom: 12px;
+  z-index: 2;
+  pointer-events: none;
+  font-size: 0.68rem;
+  color: #94a3b8;
+  background: rgba(15, 23, 42, 0.82);
+  border: 1px solid rgba(51, 65, 85, 0.9);
+  border-radius: 7px;
+  padding: 0.28rem 0.55rem;
+  letter-spacing: 0.02em;
+}
+.sk-geo-marker {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  border: 0;
+  background: transparent;
+  padding: 0;
+  cursor: pointer;
+  font-family: inherit;
+  color: #e2e8f0;
+  filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.55));
+  transition: opacity 0.15s ease, transform 0.15s ease;
+}
+.sk-geo-marker.dimmed {
+  opacity: 0.22;
+}
+.sk-geo-marker.on-path {
+  opacity: 1;
+  z-index: 3;
+  transform: scale(1.06);
+}
+.sk-geo-marker.selected .sk-geo-marker-label {
+  box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.65);
+}
+.sk-geo-marker-pin {
+  width: 14px;
+  height: 14px;
+  border-radius: 50% 50% 50% 0;
+  transform: rotate(-45deg);
+  background: var(--marker-color, #94a3b8);
+  border: 2px solid #0f172a;
+  box-sizing: border-box;
+}
+.sk-geo-marker.on-path .sk-geo-marker-pin {
+  width: 16px;
+  height: 16px;
+}
+.sk-geo-marker-label {
+  margin-top: 2px;
+  max-width: 110px;
+  padding: 0.12rem 0.35rem;
+  border-radius: 5px;
+  background: rgba(15, 23, 42, 0.92);
+  border: 1px solid color-mix(in srgb, var(--marker-color, #64748b) 55%, #334155);
+  font-size: 0.62rem;
+  font-weight: 650;
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: #e2e8f0;
+}
+.maplibregl-ctrl-attrib {
+  font-size: 10px;
+  background: rgba(15, 23, 42, 0.75) !important;
+  color: #94a3b8 !important;
+}
+.maplibregl-ctrl-attrib a {
+  color: #7dd3fc !important;
+}
+
 .sk-filters {
   display: flex;
   flex-wrap: wrap;

@@ -7,7 +7,7 @@ V0 concept demo: a **Site Survey Index** dashboard for forward-deployed healthca
 
 ## Features
 
-1. **Residency map** — interactive SVG/HTML canvas of systems and cross-silo paths, with filters (data class, legal entity, region) and a node detail drawer. Supports **click-path narratives** (dim non-path nodes, brighten path, narrative strip; clear with Esc / Clear path).
+1. **Residency map** — **Logical** (default SVG/HTML canvas) or **Geo** (MapLibre + free OpenFreeMap OSM style, no API keys) toggle. Western/central PA SIM-approx coords for Highmark HQ, AHN flagships, and external hubs; markers colored by family/external/payer. Filters, node detail drawer, and **click-path narratives** (dim non-path, brighten path + geo line highlight; clear with Esc / Clear path).
 2. **Access matrix** — heat map of systems × reachability (`path` / `constrained` / `none` / `unknown`).
 3. **Feed health** — simulated realtime ticks every 2–3s (message rate, lag, last-seen, errors) with a live indicator. Click a feed card to jump to the Residency Map and highlight the related systems + edges (same path UX as gaps).
 4. **Gap / $$ board** — ranked missing/broken paths with estimated dollar-impact hypotheses. Click a curated gap to jump to the map path story.
@@ -18,6 +18,7 @@ V0 concept demo: a **Site Survey Index** dashboard for forward-deployed healthca
 
 - Vite + React 19 + TypeScript
 - lucide-react icons
+- maplibre-gl + OpenFreeMap OSM styles (no API keys)
 
 ## Run locally
 
