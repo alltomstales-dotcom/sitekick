@@ -5,6 +5,7 @@ import {
   NavigationControl,
   Popup,
   LngLatBounds,
+  setWorkerUrl,
   type ExpressionSpecification,
   type GeoJSONSource,
   type MapLayerMouseEvent,
@@ -363,9 +364,14 @@ export function GeoResidencyMap({
   useEffect(() => {
     if (!containerRef.current || mapRef.current) return;
 
+    // Vite bundles the main entry so MapLibre's default ./maplibre-gl-worker.mjs
+    // next to the chunk 404s into index.html and GeoJSON sources hang forever
+    // (_isUpdatingWorker). Serve worker+shared from public/ instead.
+    setWorkerUrl(`${import.meta.env.BASE_URL}maplibre-gl-worker.mjs`);
+
     const map = new MapLibreMap({
       container: containerRef.current,
-      // Keyless Carto dark_all raster — Carto vector GL now watermarks API-key tiles
+      // Inline keyless dark raster — never setStyle() to OpenFreeMap / Carto vector
       style: DARK_RASTER_STYLE as StyleSpecification,
       center: PA_MAP_CENTER,
       zoom: PA_MAP_ZOOM,
@@ -431,21 +437,27 @@ export function GeoResidencyMap({
     setSviReady(true);
     setSviError(null);
     const map = mapRef.current;
+    if (!map) return;
     const attach = () => {
-      ensureSdohLayers(map!, json);
-      const show = sdohRef.current === 'svi';
-      setSdohVisibility(map!, show);
-      if (show) {
-        try {
-          if (map!.getLayer(SDOH_FILL)) map!.moveLayer(SDOH_FILL);
-          if (map!.getLayer(SDOH_OUTLINE)) map!.moveLayer(SDOH_OUTLINE);
-        } catch {
-          /* ignore */
+      try {
+        ensureSdohLayers(map, json);
+        const show = sdohRef.current === 'svi';
+        setSdohVisibility(map, show);
+        if (show) {
+          if (map.getLayer(SDOH_FILL)) map.moveLayer(SDOH_FILL);
+          if (map.getLayer(SDOH_OUTLINE)) map.moveLayer(SDOH_OUTLINE);
         }
+        return !!map.getLayer(SDOH_FILL);
+      } catch {
+        return false;
       }
     };
-    if (map?.isStyleLoaded()) attach();
-    else map?.once('load', attach);
+    if (!attach()) {
+      map.once('load', attach);
+      map.once('style.load', attach);
+      window.setTimeout(attach, 250);
+      window.setTimeout(attach, 1000);
+    }
   }, []);
 
   // Sync SDOH visibility + click popup
@@ -453,15 +465,22 @@ export function GeoResidencyMap({
     const map = mapRef.current;
     if (!map) return;
     const apply = () => {
-      ensurePathLayers(map);
-      ensureSdohLayers(map, sviDataRef.current);
+      // Do NOT gate on isStyleLoaded() — it can stay false while raster tiles
+      // stream, which previously left fill layers stuck at visibility:none while
+      // the React legend already showed SVI on.
+      try {
+        ensurePathLayers(map);
+        ensureSdohLayers(map, sviDataRef.current);
+      } catch {
+        return false;
+      }
+      if (!map.getLayer(SDOH_FILL)) return false;
       const show = sdoh === 'svi' && sviReady;
-      // Force visible whenever overlay is SVI and data is ready (post-ensure / style.load).
       setSdohVisibility(map, show);
       if (show) {
         try {
-          if (map.getLayer(SDOH_FILL)) map.moveLayer(SDOH_FILL);
-          if (map.getLayer(SDOH_OUTLINE)) map.moveLayer(SDOH_OUTLINE);
+          map.moveLayer(SDOH_FILL);
+          map.moveLayer(SDOH_OUTLINE);
           if (map.getLayer('sk-path-edges-glow')) map.moveLayer('sk-path-edges-glow');
           if (map.getLayer('sk-path-edges-line')) map.moveLayer('sk-path-edges-line');
           map.setPaintProperty(SDOH_FILL, 'fill-opacity', 0.72);
@@ -473,12 +492,25 @@ export function GeoResidencyMap({
           map.fitBounds(PA_SVI_BOUNDS, { padding: 48, duration: 650, maxZoom: 8.5 });
         }
       } else {
-        // Allow another statewide fit next time user turns SVI on.
         sviFitDoneRef.current = false;
       }
+      return true;
     };
-    if (map.isStyleLoaded()) apply();
-    else map.once('load', apply);
+    if (!apply()) {
+      map.once('load', () => {
+        apply();
+      });
+      map.once('style.load', () => {
+        apply();
+      });
+      // Tile streaming can leave isStyleLoaded false after load — retry shortly.
+      window.setTimeout(() => {
+        apply();
+      }, 250);
+      window.setTimeout(() => {
+        apply();
+      }, 1000);
+    }
 
     const onEnter = () => {
       map.getCanvas().style.cursor = sdoh === 'svi' ? 'pointer' : '';
@@ -532,8 +564,11 @@ export function GeoResidencyMap({
       const src = map.getSource('sk-path-edges') as GeoJSONSource | undefined;
       if (src) src.setData(lineFeatures as Parameters<GeoJSONSource['setData']>[0]);
     };
-    if (map.isStyleLoaded()) apply();
-    else map.once('load', apply);
+    try {
+      apply();
+    } catch {
+      map.once('load', apply);
+    }
   }, [lineFeatures]);
 
   // Sync markers — update classes/text; do not rewrite innerHTML every pass
