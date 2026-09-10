@@ -5,6 +5,7 @@ import {
   NavigationControl,
   Popup,
   LngLatBounds,
+  type ExpressionSpecification,
   type GeoJSONSource,
   type MapLayerMouseEvent,
   type StyleSpecification,
@@ -113,13 +114,28 @@ const OVERLAY_LAYER_IDS = new Set([
   SDOH_OUTLINE,
 ]);
 
+/** Statewide PA camera when SVI choropleth is enabled (once per toggle-on). */
+const PA_SVI_BOUNDS: [[number, number], [number, number]] = [
+  [-80.6, 39.65],
+  [-74.65, 42.3],
+];
+
+const SVI_FILL_COLOR: ExpressionSpecification = [
+  'interpolate',
+  ['linear'],
+  ['to-number', ['coalesce', ['get', 'rpl_themes'], 0]],
+  0,
+  '#14b8a6',
+  0.35,
+  '#38bdf8',
+  0.65,
+  '#a855f7',
+  1,
+  '#f43f5e',
+];
+
 function ensureSdohLayers(map: MapLibreMap, data: Parameters<GeoJSONSource['setData']>[0] | null) {
   if (!data) return;
-  const beforeId = map.getLayer('sk-path-edges-glow')
-    ? 'sk-path-edges-glow'
-    : map.getLayer('sk-path-edges-line')
-      ? 'sk-path-edges-line'
-      : undefined;
 
   if (!map.getSource(SDOH_SOURCE)) {
     map.addSource(SDOH_SOURCE, { type: 'geojson', data });
@@ -128,45 +144,48 @@ function ensureSdohLayers(map: MapLibreMap, data: Parameters<GeoJSONSource['setD
   }
 
   if (!map.getLayer(SDOH_FILL)) {
-    map.addLayer(
-      {
-        id: SDOH_FILL,
-        type: 'fill',
-        source: SDOH_SOURCE,
-        layout: { visibility: 'none' },
-        paint: {
-          'fill-color': [
-            'interpolate',
-            ['linear'],
-            ['coalesce', ['get', 'rpl_themes'], 0],
-            0,
-            '#0d9488',
-            0.5,
-            '#6366f1',
-            1,
-            '#c026d3',
-          ],
-          'fill-opacity': 0.4,
-        },
+    map.addLayer({
+      id: SDOH_FILL,
+      type: 'fill',
+      source: SDOH_SOURCE,
+      layout: { visibility: 'none' },
+      paint: {
+        'fill-color': SVI_FILL_COLOR,
+        'fill-opacity': 0.72,
+        'fill-antialias': true,
       },
-      beforeId,
-    );
+    });
+  } else {
+    map.setPaintProperty(SDOH_FILL, 'fill-color', SVI_FILL_COLOR);
+    map.setPaintProperty(SDOH_FILL, 'fill-opacity', 0.72);
   }
+
   if (!map.getLayer(SDOH_OUTLINE)) {
-    map.addLayer(
-      {
-        id: SDOH_OUTLINE,
-        type: 'line',
-        source: SDOH_SOURCE,
-        layout: { visibility: 'none' },
-        paint: {
-          'line-color': '#94a3b8',
-          'line-width': 0.6,
-          'line-opacity': 0.55,
-        },
+    map.addLayer({
+      id: SDOH_OUTLINE,
+      type: 'line',
+      source: SDOH_SOURCE,
+      layout: { visibility: 'none' },
+      paint: {
+        'line-color': '#e2e8f0',
+        'line-width': 1.35,
+        'line-opacity': 0.9,
       },
-      beforeId,
-    );
+    });
+  } else {
+    map.setPaintProperty(SDOH_OUTLINE, 'line-color', '#e2e8f0');
+    map.setPaintProperty(SDOH_OUTLINE, 'line-width', 1.35);
+    map.setPaintProperty(SDOH_OUTLINE, 'line-opacity', 0.9);
+  }
+
+  // Keep choropleth above Carto Dark Matter fills/labels; path edges above fills.
+  try {
+    map.moveLayer(SDOH_FILL);
+    map.moveLayer(SDOH_OUTLINE);
+    if (map.getLayer('sk-path-edges-glow')) map.moveLayer('sk-path-edges-glow');
+    if (map.getLayer('sk-path-edges-line')) map.moveLayer('sk-path-edges-line');
+  } catch {
+    /* style mid-swap */
   }
 }
 
@@ -271,6 +290,7 @@ export function GeoResidencyMap({
   };
 
   const sviDataRef = useRef<Parameters<GeoJSONSource['setData']>[0] | null>(null);
+  const sviFitDoneRef = useRef(false);
   const [sviReady, setSviReady] = useState(false);
   const [sviError, setSviError] = useState<string | null>(null);
   const popupRef = useRef<Popup | null>(null);
@@ -443,7 +463,10 @@ export function GeoResidencyMap({
         setSviReady(true);
         setSviError(null);
         const map = mapRef.current;
-        if (map?.isStyleLoaded()) ensureSdohLayers(map, json);
+        if (map?.isStyleLoaded()) {
+          ensureSdohLayers(map, json);
+          if (sdohRef.current === 'svi') setSdohVisibility(map, true);
+        }
       } catch (err) {
         if (cancelled) return;
         setSviError(err instanceof Error ? err.message : 'SVI load failed');
@@ -462,7 +485,17 @@ export function GeoResidencyMap({
     const apply = () => {
       ensurePathLayers(map);
       ensureSdohLayers(map, sviDataRef.current);
-      setSdohVisibility(map, sdoh === 'svi' && sviReady);
+      const show = sdoh === 'svi' && sviReady;
+      // Force visible whenever overlay is SVI and data is ready (post-ensure / style.load).
+      setSdohVisibility(map, show);
+      if (show && !sviFitDoneRef.current) {
+        sviFitDoneRef.current = true;
+        map.fitBounds(PA_SVI_BOUNDS, { padding: 48, duration: 650, maxZoom: 8.5 });
+      }
+      if (!show) {
+        // Allow another statewide fit next time user turns SVI on.
+        sviFitDoneRef.current = false;
+      }
     };
     if (map.isStyleLoaded()) apply();
     else map.once('load', apply);
@@ -626,8 +659,14 @@ export function GeoResidencyMap({
           type="button"
           className={`sk-geo-layer-btn sk-geo-sdoh-btn${sdoh === 'svi' ? ' active' : ''}`}
           aria-pressed={sdoh === 'svi'}
-          disabled={!sviReady && !sviError}
-          title={sviError ? `SVI unavailable: ${sviError}` : 'CDC/ATSDR SVI 2022 overall county ranking'}
+          disabled={!sviReady}
+          title={
+            sviError
+              ? `SVI unavailable: ${sviError}`
+              : sviReady
+                ? 'CDC/ATSDR SVI 2022 overall county ranking'
+                : 'Loading PA county SVI…'
+          }
           onClick={() => setSdoh(sdoh === 'svi' ? 'off' : 'svi')}
         >
           SDOH: SVI
@@ -641,7 +680,12 @@ export function GeoResidencyMap({
         >
           SDOH: PLACES (soon)
         </button>
-        {sdoh === 'svi' && (
+        {sviError && (
+          <div className="sk-geo-sdoh-error" role="alert">
+            SVI load failed: {sviError}
+          </div>
+        )}
+        {sdoh === 'svi' && sviReady && (
           <div className="sk-geo-sdoh-legend" aria-hidden>
             <span className="sk-geo-sdoh-legend-label">SVI low</span>
             <span className="sk-geo-sdoh-ramp" />
@@ -649,7 +693,7 @@ export function GeoResidencyMap({
           </div>
         )}
       </div>
-      {sdoh === 'svi' && (
+      {sdoh === 'svi' && sviReady && (
         <div className="sk-geo-sdoh-disclaimer" role="note">
           {SDOH_DISCLAIMER}
         </div>
