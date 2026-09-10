@@ -3,6 +3,7 @@ import type { PathNarrative } from './types';
 /**
  * Curated click-path stories for Gap → Residency Map demos.
  * All paths reference existing SIM graph nodes/edges.
+ * Every edge endpoint must appear in the same path's nodeIds.
  */
 export const PATH_NARRATIVES: PathNarrative[] = [
   {
@@ -11,41 +12,48 @@ export const PATH_NARRATIVES: PathNarrative[] = [
     title: 'External UPMC ADT → AHN MPI mismatch',
     problem:
       'UPMC ADT events arrive only via selective Edge/HIE; enterprise MPI never fully enrolls UPMC MRNs against AHN/Highmark member IDs.',
-    systemsTouched: ['UPMC', 'Rhap Edge', 'HIE GW', 'MPI', 'AHN Hub'],
+    systemsTouched: ['UPMC', 'Rhap Edge', 'HIE GW', 'Rhapsody', 'MPI', 'AHN Hub'],
     residencyConstraint:
       'External residency + competitive sharing limits; no deep MPI enroll for UPMC MRNs.',
     dollarLever:
       'Duplicate testing, claim rejects, and out-of-network continuity risk ~$1.9M/yr (hyp.).',
-    nodeIds: ['upmc', 'rhapsody-edge', 'hie-gw', 'mpi', 'ahn-hub'],
+    nodeIds: ['upmc', 'rhapsody-edge', 'hie-gw', 'rhapsody', 'mpi', 'ahn-hub'],
     edgeIds: ['e-upmc-edge', 'e-upmc-hie', 'e-edge-hie', 'e-rhap-mpi', 'e-ahn-hub-mpi'],
   },
   {
-    id: 'n-ecw-claims',
+    id: 'n-ind-claims',
     gapId: 'g8',
-    title: 'ECW ambulatory → Rhapsody → claims',
+    title: 'Independence HS → Edge → eligibility / claims',
     problem:
-      'External ambulatory (ECW-class) encounters hit Edge with thin demographics; eligibility tier rules and 837 attachment lag before Highmark claims.',
-    systemsTouched: ['Independence HS', 'Rhap Edge', 'Rhapsody', 'HM Elig', 'HM Claims'],
+      'Independence HS encounters reach Highmark only via constrained HIE→Edge; eligibility at registration misses product tier rules and claim attachment lags.',
+    systemsTouched: ['Independence HS', 'HIE GW', 'Rhap Edge', 'Rhapsody', 'HM Elig', 'HM Claims'],
     residencyConstraint:
-      'External ambulatory residency; narrow-network product tiering at registration.',
+      'External residency; narrow-network product tiering at registration via Edge-mediated eligibility.',
     dollarLever:
       'Bad debt / leakage from missed tier rules and delayed claim attachment ~$480K/yr (hyp.).',
-    nodeIds: ['independence-hs', 'rhapsody-edge', 'rhapsody', 'hmk-elig', 'hmk-claims'],
+    nodeIds: [
+      'independence-hs',
+      'hie-gw',
+      'rhapsody-edge',
+      'rhapsody',
+      'hmk-elig',
+      'hmk-claims',
+    ],
     edgeIds: ['e-ind-hie', 'e-edge-hie', 'e-rhap-edge', 'e-elig-edge', 'e-claims-edge'],
   },
   {
-    id: 'n-lab-oru',
+    id: 'n-hie-edw',
     gapId: 'g4',
-    title: 'Lab ORU delay → EDW / care management',
+    title: 'HIE clinical → EDW / care management',
     problem:
-      'Lab ORU traffic through Rhapsody lands in EDW on a T+1 batch; care-mgmt RWD and HIE purpose-of-use constraints compound the lag.',
-    systemsTouched: ['AHN Hub', 'Rhapsody', 'HIE GW', 'EDW/RWD'],
+      'HIE clinical reaches the shared spine only via constrained Edge; purpose-of-use and consent block payer use into EDW/RWD for care-mgmt analytics.',
+    systemsTouched: ['HIE GW', 'Rhap Edge', 'Rhapsody', 'EDW/RWD'],
     residencyConstraint:
       'Shared analytics residency; consent / purpose-of-use blocks payer use of HIE clinical.',
     dollarLever:
       'Care-mgmt RWD opportunity and delayed intervention ~$1.5M/yr (hyp.).',
-    nodeIds: ['ahn-hub', 'rhapsody', 'hie-gw', 'edw-rwd'],
-    edgeIds: ['e-ahn-hub-rhap', 'e-rhap-edw', 'e-edge-hie', 'e-rhap-edge'],
+    nodeIds: ['hie-gw', 'rhapsody-edge', 'rhapsody', 'edw-rwd'],
+    edgeIds: ['e-edge-hie', 'e-rhap-edge', 'e-rhap-edw'],
   },
   {
     id: 'n-prior-auth-ehr',

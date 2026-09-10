@@ -82,7 +82,9 @@ export function GapBoard({ onActivatePath, activePathId }: Props) {
                         <Route size={12} strokeWidth={2.5} />
                         View path
                       </span>
-                    ) : null}
+                    ) : (
+                      <span className="sk-pill path-none">No curated path</span>
+                    )}
                   </div>
                   <div className="sk-gap-path">
                     {sa?.shortName ?? a} <span>→</span> {sb?.shortName ?? b}
