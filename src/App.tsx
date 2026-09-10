@@ -60,6 +60,7 @@ export default function App() {
           <ResidencyMap
             activePath={activePath}
             onClearPath={clearPath}
+            onActivatePath={activatePath}
             interviewedNodes={interviewedNodes}
             interviewedEdges={interviewedEdges}
           />

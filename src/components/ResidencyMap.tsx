@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   SYSTEMS,
   EDGES,
@@ -7,8 +7,11 @@ import {
   REGION_OPTIONS,
 } from '../data/systems';
 import type { DataClass, LegalEntity, PathNarrative, Region, SystemEdge, SystemNode } from '../data/types';
+import { DEFAULT_GEO_LAYERS, type GeoLayer } from '../data/geo';
+import type { MapQueryEffects } from '../lib/mapQuery';
 import { NodeDetailDrawer } from './NodeDetailDrawer';
 import { GeoResidencyMap } from './GeoResidencyMap';
+import { MapQueryBar } from './MapQueryBar';
 import { X } from 'lucide-react';
 
 type MapMode = 'logical' | 'geo';
@@ -130,6 +133,8 @@ function edgeMidpoint(sourceId: string, targetId: string): { x: number; y: numbe
 interface Props {
   activePath: PathNarrative | null;
   onClearPath: () => void;
+  /** Activate a curated path narrative (Map Query show_path) */
+  onActivatePath?: (narrativeId: string) => void;
   /** Nodes confirmed via Day-1 Interview answers */
   interviewedNodes?: Set<string>;
   /** Edges confirmed via Day-1 Interview answers */
@@ -139,6 +144,7 @@ interface Props {
 export function ResidencyMap({
   activePath,
   onClearPath,
+  onActivatePath,
   interviewedNodes,
   interviewedEdges,
 }: Props) {
@@ -147,6 +153,10 @@ export function ResidencyMap({
   const [region, setRegion] = useState<Region | 'all'>('all');
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [mapMode, setMapMode] = useState<MapMode>('logical');
+  const [queryHighlightIds, setQueryHighlightIds] = useState<string[] | null>(null);
+  const [geoLayers, setGeoLayers] = useState<Record<GeoLayer, boolean>>(() => ({
+    ...DEFAULT_GEO_LAYERS,
+  }));
 
   const pathNodeSet = useMemo(
     () => (activePath ? new Set(activePath.nodeIds) : null),
@@ -157,14 +167,49 @@ export function ResidencyMap({
     [activePath],
   );
 
+  const queryHighlightSet = useMemo(
+    () => (queryHighlightIds && queryHighlightIds.length > 0 ? new Set(queryHighlightIds) : null),
+    [queryHighlightIds],
+  );
+
+  /** Path takes precedence for dimming; else query highlight */
+  const focusNodeSet = pathNodeSet ?? queryHighlightSet;
+
+  const applyQueryEffects = useCallback(
+    (effects: MapQueryEffects) => {
+      if (effects.entity !== undefined) setEntity(effects.entity);
+      if (effects.dataClass !== undefined) setDataClass(effects.dataClass);
+      if (effects.region !== undefined) setRegion(effects.region);
+      if (effects.highlightIds !== undefined) setQueryHighlightIds(effects.highlightIds);
+      if (effects.selectedId !== undefined) setSelectedId(effects.selectedId);
+      if (effects.clearPath) onClearPath();
+      if (effects.pathId) onActivatePath?.(effects.pathId);
+      if (effects.resetGeoLayers) {
+        setGeoLayers({ ...DEFAULT_GEO_LAYERS });
+      } else if (effects.geoLayers) {
+        setGeoLayers((prev) => ({ ...prev, ...effects.geoLayers }));
+      }
+    },
+    [onActivatePath, onClearPath],
+  );
+
+  // Clear query highlight when a path is activated from elsewhere (feeds/gaps)
   useEffect(() => {
-    if (!activePath) return;
+    if (activePath) setQueryHighlightIds(null);
+  }, [activePath]);
+
+  useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClearPath();
+      if (e.key !== 'Escape') return;
+      if (activePath) onClearPath();
+      else if (queryHighlightSet) {
+        setQueryHighlightIds(null);
+        setEntity('all');
+      }
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [activePath, onClearPath]);
+  }, [activePath, onClearPath, queryHighlightSet]);
 
   const filteredSystems = useMemo(() => {
     return SYSTEMS.filter((s) => {
@@ -189,7 +234,7 @@ export function ResidencyMap({
   const selected = SYSTEMS.find((s) => s.id === selectedId) ?? null;
 
   return (
-    <div className={`sk-map-layout${activePath ? ' path-mode' : ''}`}>
+    <div className={`sk-map-layout${activePath || queryHighlightSet ? ' path-mode' : ''}`}>
       {activePath ? (
         <div className="sk-path-strip" role="status" aria-live="polite">
           <div className="sk-path-strip-main">
@@ -223,6 +268,11 @@ export function ResidencyMap({
           </button>
         </div>
       ) : null}
+
+      <MapQueryBar
+        onEffects={applyQueryEffects}
+        onPreferGeo={() => setMapMode('geo')}
+      />
 
       <div className="sk-filters">
         <div className="sk-mode-toggle" role="group" aria-label="Map mode">
@@ -332,6 +382,9 @@ export function ResidencyMap({
             activePath={activePath}
             pathNodeSet={pathNodeSet}
             pathEdgeSet={pathEdgeSet}
+            layers={geoLayers}
+            onLayersChange={setGeoLayers}
+            queryHighlightSet={queryHighlightSet}
           />
         ) : (
         <div className="sk-map-scroll">
@@ -398,7 +451,7 @@ export function ResidencyMap({
               </defs>
 
               {LANES.map((lane) => (
-                <g key={lane.id} opacity={pathNodeSet ? 0.35 : 0.95}>
+                <g key={lane.id} opacity={focusNodeSet ? 0.35 : 0.95}>
                   <rect
                     x={lane.x}
                     y={lane.y}
@@ -426,9 +479,18 @@ export function ResidencyMap({
 
               {visibleEdges.map((e) => {
                 const onPath = pathEdgeSet?.has(e.id) ?? false;
-                const dimmed = pathEdgeSet != null && !onPath;
-                const stroke = onPath ? '#38bdf8' : edgeStroke(e.status);
-                const marker = onPath
+                const edgeOnQuery =
+                  queryHighlightSet != null &&
+                  queryHighlightSet.has(e.source) &&
+                  queryHighlightSet.has(e.target);
+                const dimmed =
+                  pathEdgeSet != null
+                    ? !onPath
+                    : queryHighlightSet != null
+                      ? !edgeOnQuery
+                      : false;
+                const stroke = onPath || edgeOnQuery ? '#38bdf8' : edgeStroke(e.status);
+                const marker = onPath || edgeOnQuery
                   ? 'url(#arrow-path)'
                   : e.status === 'active'
                     ? 'url(#arrow-active)'
@@ -437,19 +499,20 @@ export function ResidencyMap({
                       : 'url(#arrow-bad)';
                 const mid = edgeMidpoint(e.source, e.target);
                 const baseOpacity = e.status === 'missing' ? 0.45 : 0.9;
-                const opacity = dimmed ? 0.12 : onPath ? 1 : baseOpacity;
+                const lit = onPath || edgeOnQuery;
+                const opacity = dimmed ? 0.12 : lit ? 1 : baseOpacity;
                 return (
                   <g
                     key={e.id}
                     opacity={opacity}
-                    filter={onPath ? 'url(#path-glow)' : undefined}
-                    className={onPath ? 'sk-edge-on-path' : undefined}
+                    filter={lit ? 'url(#path-glow)' : undefined}
+                    className={lit ? 'sk-edge-on-path' : undefined}
                   >
                     <path
                       d={edgePath(e.source, e.target)}
                       fill="none"
                       stroke={stroke}
-                      strokeWidth={onPath ? 3.25 : interviewedEdges?.has(e.id) ? 2.35 : 1.75}
+                      strokeWidth={lit ? 3.25 : interviewedEdges?.has(e.id) ? 2.35 : 1.75}
                       markerEnd={marker}
                       strokeDasharray={
                         e.status === 'missing' || e.status === 'broken'
@@ -477,10 +540,10 @@ export function ResidencyMap({
                       x={mid.x}
                       y={mid.y + 3}
                       textAnchor="middle"
-                      fill={onPath ? '#7dd3fc' : '#94a3b8'}
+                      fill={lit ? '#7dd3fc' : '#94a3b8'}
                       fontSize={9}
                       fontFamily="system-ui, sans-serif"
-                      fontWeight={onPath ? 700 : 400}
+                      fontWeight={lit ? 700 : 400}
                     >
                       {e.protocol.length > 22 ? `${e.protocol.slice(0, 20)}…` : e.protocol}
                     </text>
@@ -493,7 +556,8 @@ export function ResidencyMap({
               const pos = LAYOUT[s.id] ?? { x: 100, y: 100 };
               const isSelected = selectedId === s.id;
               const onPath = pathNodeSet?.has(s.id) ?? false;
-              const dimmed = pathNodeSet != null && !onPath;
+              const onQuery = queryHighlightSet?.has(s.id) ?? false;
+              const dimmed = focusNodeSet != null && !focusNodeSet.has(s.id);
               const rosterMore =
                 s.id === 'ahn-hub' && s.hospitalList
                   ? s.hospitalList.length -
@@ -505,12 +569,12 @@ export function ResidencyMap({
                 <button
                   key={s.id}
                   type="button"
-                  className={`sk-flow-node entity-${s.legalEntity}${isSelected ? ' selected' : ''}${onPath ? ' on-path' : ''}${dimmed ? ' dimmed' : ''}${interviewed ? ' interviewed' : ''}${assumed ? ' assumed' : ''}`}
+                  className={`sk-flow-node entity-${s.legalEntity}${isSelected ? ' selected' : ''}${onPath || onQuery ? ' on-path' : ''}${dimmed ? ' dimmed' : ''}${interviewed ? ' interviewed' : ''}${assumed ? ' assumed' : ''}`}
                   style={{
                     left: pos.x,
                     top: pos.y,
                     width: NODE_W,
-                    borderColor: onPath
+                    borderColor: onPath || onQuery
                       ? '#38bdf8'
                       : interviewed
                         ? '#34d399'
@@ -524,7 +588,7 @@ export function ResidencyMap({
                   <div
                     className="sk-flow-node-accent"
                     style={{
-                      background: onPath
+                      background: onPath || onQuery
                         ? '#38bdf8'
                         : interviewed
                           ? '#34d399'

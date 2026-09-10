@@ -1774,3 +1774,174 @@ button.sk-gap-card:disabled {
   border: 1.5px solid #34d399;
   background: rgba(52, 211, 153, 0.35);
 }
+
+
+/* ── Map Query / Voice (GEV-inspired) ─────────────────────────────── */
+.sk-map-query {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 0.65rem 0.85rem;
+  background: linear-gradient(135deg, rgba(15, 23, 42, 0.95), rgba(12, 74, 110, 0.25));
+  border: 1px solid rgba(56, 189, 248, 0.35);
+  border-radius: 10px;
+}
+
+.sk-map-query-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+  align-items: center;
+}
+
+.sk-map-query-mode {
+  flex-shrink: 0;
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #7dd3fc;
+  background: rgba(14, 165, 233, 0.15);
+  border: 1px solid rgba(56, 189, 248, 0.45);
+  border-radius: 999px;
+  padding: 0.28rem 0.65rem;
+}
+
+.sk-map-query-form {
+  flex: 1;
+  min-width: 200px;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  background: #0b1220;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.2rem 0.35rem 0.2rem 0.55rem;
+}
+
+.sk-map-query-icon {
+  color: #64748b;
+  flex-shrink: 0;
+}
+
+.sk-map-query-input {
+  flex: 1;
+  min-width: 0;
+  background: transparent;
+  border: none;
+  outline: none;
+  color: var(--text);
+  font: inherit;
+  font-size: 0.9rem;
+  padding: 0.4rem 0.25rem;
+}
+
+.sk-map-query-input::placeholder {
+  color: #64748b;
+}
+
+.sk-map-query-go {
+  flex-shrink: 0;
+  font-size: 0.78rem;
+}
+
+.sk-map-query-mic {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.4rem 0.7rem;
+  border-radius: 8px;
+  border: 1px solid rgba(56, 189, 248, 0.4);
+  background: rgba(14, 165, 233, 0.12);
+  color: #e0f2fe;
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.sk-map-query-mic:hover:not(:disabled) {
+  background: rgba(14, 165, 233, 0.22);
+}
+
+.sk-map-query-mic.listening {
+  background: rgba(239, 68, 68, 0.2);
+  border-color: rgba(248, 113, 113, 0.65);
+  color: #fecaca;
+  animation: sk-mic-pulse 1.2s ease-in-out infinite;
+}
+
+.sk-map-query-mic.unsupported,
+.sk-map-query-mic:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+@keyframes sk-mic-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(248, 113, 113, 0.35);
+  }
+  50% {
+    box-shadow: 0 0 0 6px rgba(248, 113, 113, 0);
+  }
+}
+
+.sk-map-query-hint {
+  font-size: 0.75rem;
+  color: #fbbf24;
+}
+
+.sk-map-query-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.sk-map-query-chip {
+  font: inherit;
+  font-size: 0.72rem;
+  color: #cbd5e1;
+  background: #0f172a;
+  border: 1px solid #334155;
+  border-radius: 999px;
+  padding: 0.28rem 0.65rem;
+  cursor: pointer;
+}
+
+.sk-map-query-chip:hover {
+  border-color: #38bdf8;
+  color: #e0f2fe;
+  background: rgba(14, 165, 233, 0.12);
+}
+
+.sk-map-query-hud {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.55rem;
+  padding: 0.55rem 0.65rem;
+  background: rgba(2, 6, 23, 0.85);
+  border: 1px solid rgba(52, 211, 153, 0.35);
+  border-radius: 8px;
+  font-size: 0.82rem;
+  color: #e2e8f0;
+}
+
+.sk-map-query-hud-text {
+  flex: 1;
+  line-height: 1.35;
+}
+
+.sk-map-query-hud-dismiss {
+  flex-shrink: 0;
+  background: transparent;
+  border: none;
+  color: #94a3b8;
+  cursor: pointer;
+  padding: 0.1rem;
+  display: inline-flex;
+}
+
+.sk-map-query-hud-dismiss:hover {
+  color: #e2e8f0;
+}

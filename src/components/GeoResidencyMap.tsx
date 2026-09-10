@@ -67,6 +67,11 @@ interface Props {
   activePath: PathNarrative | null;
   pathNodeSet: Set<string> | null;
   pathEdgeSet: Set<string> | null;
+  /** Controlled Geo layer visibility (Map Query / Voice) */
+  layers?: Record<GeoLayer, boolean>;
+  onLayersChange?: (layers: Record<GeoLayer, boolean>) => void;
+  /** Extra node ids to brighten (query highlight) */
+  queryHighlightSet?: Set<string> | null;
 }
 
 export function GeoResidencyMap({
@@ -77,6 +82,9 @@ export function GeoResidencyMap({
   activePath,
   pathNodeSet,
   pathEdgeSet,
+  layers: layersProp,
+  onLayersChange,
+  queryHighlightSet,
 }: Props) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<MapLibreMap | null>(null);
@@ -84,9 +92,17 @@ export function GeoResidencyMap({
   const onSelectRef = useRef(onSelect);
   onSelectRef.current = onSelect;
 
-  const [layers, setLayers] = useState<Record<GeoLayer, boolean>>(() => ({
+  const [layersInternal, setLayersInternal] = useState<Record<GeoLayer, boolean>>(() => ({
     ...DEFAULT_GEO_LAYERS,
   }));
+  const layers = layersProp ?? layersInternal;
+  const setLayers = (updater: (prev: Record<GeoLayer, boolean>) => Record<GeoLayer, boolean>) => {
+    if (onLayersChange) {
+      onLayersChange(updater(layers));
+    } else {
+      setLayersInternal(updater);
+    }
+  };
 
   const filteredSystemIds = useMemo(() => new Set(systems.map((s) => s.id)), [systems]);
 
@@ -229,9 +245,11 @@ export function GeoResidencyMap({
 
     for (const m of visibleMarkers) {
       const onPath = pathNodeSet?.has(m.systemId) ?? false;
-      const dimmed = pathNodeSet != null && !onPath;
+      const onQuery = queryHighlightSet?.has(m.systemId) ?? false;
+      const focusSet = pathNodeSet ?? queryHighlightSet ?? null;
+      const dimmed = focusSet != null && !focusSet.has(m.systemId);
       const isSelected = selectedId === m.systemId;
-      const color = onPath ? '#38bdf8' : ENTITY_COLOR[m.color];
+      const color = onPath || onQuery ? '#38bdf8' : ENTITY_COLOR[m.color];
 
       let marker = markersRef.current.get(m.id);
       if (!marker) {
@@ -249,24 +267,29 @@ export function GeoResidencyMap({
       }
 
       const el = marker.getElement();
-      el.className = `sk-geo-marker entity-${m.color}${isSelected ? ' selected' : ''}${onPath ? ' on-path' : ''}${dimmed ? ' dimmed' : ''}`;
+      el.className = `sk-geo-marker entity-${m.color}${isSelected ? ' selected' : ''}${onPath || onQuery ? ' on-path' : ''}${dimmed ? ' dimmed' : ''}`;
       el.style.setProperty('--marker-color', color);
       el.title = m.label;
       el.setAttribute('aria-label', m.label);
       el.innerHTML = `<span class="sk-geo-marker-pin"></span><span class="sk-geo-marker-label">${escapeHtml(shortLabel(m.label))}</span>`;
       marker.setLngLat([m.lng, m.lat]);
     }
-  }, [visibleMarkers, selectedId, pathNodeSet]);
+  }, [visibleMarkers, selectedId, pathNodeSet, queryHighlightSet]);
 
   // Camera: metro default; widen when statewide externals/Erie visible or path spans them
   useEffect(() => {
     const map = mapRef.current;
     if (!map) return;
 
-    const focusMarkers =
+    const focusSet =
       pathNodeSet && pathNodeSet.size > 0
-        ? visibleMarkers.filter((m) => pathNodeSet.has(m.systemId))
-        : visibleMarkers;
+        ? pathNodeSet
+        : queryHighlightSet && queryHighlightSet.size > 0
+          ? queryHighlightSet
+          : null;
+    const focusMarkers = focusSet
+      ? visibleMarkers.filter((m) => focusSet.has(m.systemId))
+      : visibleMarkers;
 
     if (focusMarkers.length === 0) {
       map.easeTo({ center: PA_MAP_CENTER, zoom: PA_MAP_ZOOM, duration: 500 });
@@ -282,7 +305,7 @@ export function GeoResidencyMap({
       maxZoom: needsStatewide ? PA_STATEWIDE_ZOOM + 0.4 : activePath ? 10 : PA_MAP_ZOOM,
       duration: 650,
     });
-  }, [visibleMarkers, pathNodeSet, activePath, layers]);
+  }, [visibleMarkers, pathNodeSet, queryHighlightSet, activePath, layers]);
 
   const toggleLayer = (id: GeoLayer) => {
     setLayers((prev) => ({ ...prev, [id]: !prev[id] }));
